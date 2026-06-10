@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Torneo de Pádel Fresno de Cantespino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Dependencias React & Babel para Resultados y Clasificaciones -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;900&family=Roboto:wght@300;400;700;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ebdcc9; 
+        }
+        
+        .font-bebas { font-family: 'Bebas+Neue', sans-serif; }
+        .font-roboto { font-family: 'Roboto', sans-serif; }
+        
+        .animate-fade { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none; }
+        
+        .tab-active { background-color: #c25438; color: #fefbc8; border-color: #c25438; }
+        .table-resumen th, .table-resumen td { border: 1px solid #decbb7; padding: 10px 12px; vertical-align: middle; text-align: center; }
+        .sticky-col { position: sticky; left: 0; background-color: #fef9c3; z-index: 10; box-shadow: 3px 0 5px rgba(0,0,0,0.05); text-align: center !important; }
+        .empty-cell { background-color: #f5f0e6; }
+
+        /* Estilos específicos Gestor Torneo */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .bg-grid { background-size: 20px 20px; background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 sm:p-4">
+
+    <div class="max-w-md w-full min-h-screen sm:min-h-[850px] bg-[#f5f0e6] shadow-2xl relative overflow-hidden flex flex-col sm:rounded-[3rem] border-x border-[#decbb7]">
+        
+        <!-- 1. PANTALLA PRINCIPAL -->
+        <div id="view-main" class="flex-1 flex flex-col animate-fade">
+            <div class="pt-10 pb-4 text-center flex flex-col items-center px-4">
+                <div class="mb-4 flex flex-col items-center">
+                    <img src="https://i.postimg.cc/RWq0QwPn/Escudo-Fresno.jpg" alt="Escudo" class="w-36 h-36 object-contain drop-shadow-md" onerror="this.src='https://placehold.co/144x144/cbd5e1/475569?text=Escudo'">
+                </div>
+
+                <div class="flex flex-col items-center gap-1">
+                    <div class="bg-[#c25438] text-[#fef9c3] px-6 py-3 rounded-2xl shadow-lg border-b-4 border-[#9e3f28] font-black uppercase text-lg tracking-tight text-center max-w-[340px]">
+                        I TORNEO PÁDEL FRESNO DE CANTESPINO
+                    </div>
+                    <p class="text-xs font-black text-[#c25438] uppercase tracking-widest mt-2 bg-[#fef9c3]/80 px-3 py-1 rounded-full border border-[#fde047]">
+                        Días 3, 4 y 5 de Julio de 2026
+                    </p>
+                </div>
+                
+                <div class="mt-4 bg-[#c25438] text-[#fef9c3] px-6 py-2.5 rounded-xl shadow-lg border-b-4 border-[#9e3f28] font-black uppercase text-base tracking-wide">
+                    Femenino y Masculino
+                </div>
+
+                <p class="text-xs font-black text-[#c25438] uppercase tracking-widest mt-3 bg-[#fef9c3]/80 px-4 py-1.5 rounded-full border border-[#fde047] text-center max-w-[320px]">
+                    Sede principal: PRADO PINILLA
+                </p>
+                <p class="text-xs font-black text-[#c25438] uppercase tracking-widest mt-1.5 bg-[#fef9c3]/80 px-4 py-1.5 rounded-full border border-[#fde047] text-center max-w-[320px]">
+                    Subsede: Cascajares
+                </p>
+            </div>
+
+            <div class="px-6 mt-4">
+                <div class="bg-white rounded-[2.5rem] shadow-xl p-6 border border-[#decbb7] flex flex-col items-center text-center">
+                    <h3 class="text-sm font-black text-[#c25438] italic uppercase tracking-tight mb-4 border-b-2 border-[#c25438] pb-1 w-full">
+                        5 Partidos Garantizados
+                    </h3>
+                    <div class="w-full">
+                        <h2 class="text-xs font-black text-[#3e342f] uppercase tracking-tight leading-tight">Mínimo 4 y máximo 16 parejas por categoría.</h2>
+                        <h2 class="text-xs font-black text-[#3e342f] uppercase tracking-tight mb-1">Solo número par de parejas.</h2>
+                        <p class="text-[9px] font-black text-[#c25438] italic uppercase tracking-tight mt-1 truncate">Si impar, la última inscrita perderá el derecho de participación.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-3 mt-auto mb-4">
+                <button onclick="showView('bases')" class="flex items-center justify-between w-full p-4 bg-white rounded-2xl shadow-sm border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-[#fef9c3]/50 rounded-lg text-[#c25438]"><i data-lucide="file-text"></i></div>
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-xs">Bases de Competición</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-[#decbb7]"></i>
+                </button>
+
+                <button onclick="showView('resultados')" class="flex items-center justify-between w-full p-4 bg-white rounded-2xl shadow-sm border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-[#fef9c3]/50 rounded-lg text-[#c25438]"><i data-lucide="trophy"></i></div>
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-xs">Resultados y Clasificaciones</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-[#decbb7]"></i>
+                </button>
+
+                <button onclick="showView('horarios')" class="flex items-center justify-between w-full p-4 bg-white rounded-2xl shadow-sm border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-[#fef9c3]/50 rounded-lg text-[#c25438]"><i data-lucide="calendar"></i></div>
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-xs">Calendarios de Competición</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-[#decbb7]"></i>
+                </button>
+
+                <button onclick="showView('info')" class="flex items-center justify-between w-full p-4 bg-[#fef9c3] rounded-2xl shadow-lg border-2 border-[#c25438] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-[#c25438] rounded-lg text-[#fef9c3]"><i data-lucide="info"></i></div>
+                        <span class="font-black uppercase tracking-tight text-xs text-[#c25438]">Mas Info e Inscripciones</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="text-[#c25438] font-bold"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. BASES DE COMPETICIÓN -->
+        <div id="view-bases" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-12 pb-4 bg-[#f5f0e6] sticky top-0 z-10 border-b border-[#decbb7]">
+                <button onclick="showView('main')" class="mb-4 flex items-center text-[#c25438] font-bold text-sm">
+                   <i data-lucide="arrow-left" class="mr-2 w-4 h-4"></i> Volver
+                </button>
+                <h2 class="text-2xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter">
+                    <i data-lucide="file-text" class="text-[#c25438]"></i> BASES COMPETICIÓN
+                </h2>
+            </div>
+            
+            <div class="p-6 space-y-4 pb-12 text-sm text-[#3e342f] leading-relaxed">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-[#decbb7] space-y-4">
+                    <div>
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-xs mb-1">Sistema</span>
+                        <p class="font-bold">Torneos femenino y masculino simultáneos.</p>
+                        <ul class="list-disc ml-4 mt-2 space-y-2">
+                            <li><span class="font-bold">Fase de liga.-</span> Grupos de 4 parejas en cada categoría (excepto grupos de 12).</li>
+                            <li><span class="font-bold">Cabezas de serie.-</span> En la elaboración de grupos, se tendrá en cuenta ranking de Riaza y Playtomic de Madrid.</li>
+                            <li><span class="font-bold">Horarios.-</span> Se tendrá en cuenta las sugerencias de horarios en la medida de lo posible.</li>
+                            <li><span class="font-bold">Sorteo de grupos.-</span> Transmisión en directo por RRSS.</li>
+                            <li><span class="font-bold">Eliminatorias en dos zonas.-</span> Élite (1er y 2do de liga) y zona Plata (3ro y 4to de cada grupo).</li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#f5f0e6]">
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-xs mb-1">Parejas</span>
+                        <ul class="list-disc ml-4 space-y-1">
+                            <li>Mínimo 4 y maximum 16 parejas en cada categoría por orden de inscripción.</li>
+                            <li>Número par de parejas; en caso de impar se excluirá a la última inscrita.</li>
+                            <li>Solo mujeres en torneo femenino.</li>
+                            <li>Se admiten parejas mixtas en torneo masculino.</li>
+                            <li>Se admite una única sustitución en fase liga por causa justificada, que no intervenga en torneo y con ranking inferior.</li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#f5f0e6]">
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-xs mb-1">Partidos</span>
+                        <ul class="list-disc ml-4 mt-1 space-y-1">
+                            <li><span class="font-bold text-[#3e342f]">Fase Grupos.-</span> Un set a 6 juegos con "Punto de oro" y "Tie-break" (7 puntos).</li>
+                            <li><span class="font-bold text-[#3e342f]">Cuartos y Semis Élite.-</span> Un set a 8 juegos con "Super tie-break" (11 puntos).</li>
+                            <li><span class="font-bold text-[#3e342f]">Finales Élite.-</span> DOS set a 6 juegos con tie-break.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-[#fef9c3] p-5 rounded-2xl shadow-md border border-[#c25438]/20 text-[#c25438]">
+                    <span class="text-[#c25438] font-black text-xs uppercase tracking-widest block mb-3">CLASIFICACIÓN (Fase de liga)</span>
+                    <ol class="list-decimal ml-4 space-y-2 font-bold">
+                        <li>Puntos obtenidos (partidos ganados)</li>
+                        <li>Enfrentamiento Directo entre empatados
+                            <ul class="ml-4 mt-1 space-y-1 text-[#3e342f] font-normal list-none">
+                                <li>2.1 Puntos</li>
+                                <li>2.2 Diferencia juegos</li>
+                            </ul>
+                        </li>
+                        <li>Diferencia de juegos total (Ganados-Perdidos)</li>
+                        <li>Sorteo</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. RESULTADOS Y CLASIFICACIONES -->
+        <div id="view-resultados" class="flex-1 hidden animate-fade overflow-y-auto bg-slate-50 font-roboto bg-grid">
+            <div id="react-root" class="min-h-full"></div>
+        </div>
+
+        <!-- 4. HORARIOS -->
+        <div id="view-horarios" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-12 pb-4 bg-[#f5f0e6] sticky top-0 z-20 border-b border-[#decbb7]">
+                <button onclick="showView('main')" class="mb-4 flex items-center text-[#c25438] font-bold text-sm">
+                   <i data-lucide="arrow-left" class="mr-2 w-4 h-4"></i> Volver
+                </button>
+                <h2 class="text-2xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter leading-tight mb-2">
+                    <i data-lucide="calendar" class="text-[#c25438]"></i> CUADRO RESUMEN
+                </h2>
+                <p class="text-xs text-[#3e342f] font-bold">Desliza la tabla hacia la derecha para ver todos los horarios.</p>
+            </div>
+
+            <div class="p-4 pb-12">
+                <div class="overflow-x-auto w-full bg-white rounded-xl shadow-md border border-[#decbb7]">
+                    <table class="w-full table-resumen min-w-[700px]">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Según número de<br>parejas inscritas</th>
+                                <th class="bg-[#fef9c3] text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Viernes tarde</th>
+                                <th class="bg-[#fef9c3] text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Sábado mañana</th>
+                                <th class="bg-[#fef9c3] text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Sábado tarde</th>
+                                <th class="bg-[#fef9c3] text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Domingo mañana</th>
+                                <th class="bg-[#fef9c3] text-[10px] font-black uppercase text-[#c25438] border-b-2 border-[#decbb7]">Domingo tarde</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-[10px] text-[#3e342f] bg-white">
+                           <tr>
+                                <td class="sticky-col font-black">6, 8 parejas<br><span class="font-normal text-[9px]">Grupos 2x3 y 2x4</span></td>
+                                <td class="empty-cell"></td>
+                                <td class="font-bold underline">Fase de grupos</td>
+                                <td class="font-bold">Semifinales y finales</td>
+                                <td class="empty-cell"></td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">10 parejas (2x5)</td>
+                                <td class="empty-cell"></td>
+                                <td>(3 partidos)<br><span class="font-bold underline">Fase de grupos</span></td>
+                                <td>Resto fase grupo y<br>Eliminatorias y previa</td>
+                                <td class="font-bold">Semifinales y finales</td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">12 parejas (4x3)</td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos-A (6 part.)</td>
+                                <td>Fase de grupos y<br>Previa clasificación</td>
+                                <td><span class="font-bold underline">Resto Fase de grupos</span><br>(18 part.)</td>
+                                <td>Eliminatorias Plata y<br>Semifinales y finales</td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">16 parejas (4x4)</td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos-A (6 part.)</td>
+                                <td><span class="font-bold underline">Resto Fase de grupos</span><br>(18 part.)</td>
+                                <td>Semifinales y finales<br>(Plata y Élite)</td>
+                                <td class="empty-cell"></td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(8 y 4 parejas)</span></td>
+                                <td class="empty-cell"></td>
+                                <td><span class="font-bold underline">Fase de grupos</span> y<br>Previa clasificación</td>
+                                <td>Semifinales y finales<br>(Plata y Élite)</td>
+                                <td class="empty-cell"></td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(8 y 8 parejas)</span></td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos-A (6 part.)</td>
+                                <td><span class="font-bold underline">Resto Fase de grupos</span><br>(18 part.)</td>
+                                <td>Semifinales y finales<br>(ambas categorías)</td>
+                                <td class="empty-cell"></td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(12 y 8 parejas)</span></td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos-A (6 part.)</td>
+                                <td><span class="font-bold underline">Resto Fase de grupos</span><br>(18 part.)</td>
+                                <td>Eliminatorias previas y<br>Semis y Finales grp-8</td>
+                                <td>Cuartos, semis y<br>finales grp-12</td>
+                                <td class="empty-cell"></td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(12 y 12 parejas)</span></td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos AyB (6 p)</td>
+                                <td><span class="font-bold underline">Resto Fase de grupos</span><br>(18 part.)</td>
+                                <td>Eliminatorias previas y<br>Plata ambas cat.</td>
+                                <td>Cuartos, semis y<br>finales femenino</td>
+                                <td>Cuartos, semis y<br>finales masculino</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(16 y 8 parejas)</span></td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos AyB (12 p)</td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos CyD (12 p)</td>
+                                <td><span class="font-bold underline">Fase grupos EyF (12 p)</span><br>Semis y finales torneo-8</td>
+                                <td>Consolac. completa<br>torneo-16</td>
+                                <td>Cuartos, Semis y<br>finales torneo-16</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black">Torneo mixto<br><span class="font-normal text-[9px]">(16 y 12 parejas)</span></td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos AyB (12 p)</td>
+                                <td><span class="font-bold underline">Fase grupos</span><br>grupos C,D,E (18)</td>
+                                <td><span class="font-bold underline">Fase grupo-F (6 p) y</span><br>Previas y Plata T-12</td>
+                                <td>Plata y<br>Cuartos Torneo-16</td>
+                                <td>Semis y finales de<br>ambas torneos</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col font-black border-b-0">Torneo mixto<br><span class="font-normal text-[9px]">(16 y 16 parejas)</span></td>
+                                <td class="border-b-0"><span class="font-bold underline">Fase grupos</span><br>grupos AyB (12 p)</td>
+                                <td class="border-b-0"><span class="font-bold underline">Fase grupos</span><br>grupos C,D,E (18)</td>
+                                <td class="border-b-0"><span class="font-bold underline">Fase grupos</span><br>grupos F,G,H (18)</td>
+                                <td class="border-b-0">Plata de<br>ambas categorías</td>
+                                <td class="border-b-0">Cuartos, semis y<br>finales ambos.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. INFO E INSCRIPCIONES -->
+        <div id="view-info" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-12 pb-4 sticky top-0 z-10">
+                <button onclick="showView('main')" class="mb-6 flex items-center text-[#c25438] font-bold text-sm">
+                    <i data-lucide="arrow-left" class="mr-2 w-4 h-4"></i> Volver
+                </button>
+            </div>
+            
+            <div class="px-8 pb-12 flex-1 flex flex-col items-center mt-6">
+                <h2 class="text-2xl font-black text-[#3e342f] mb-6 uppercase tracking-widest text-center leading-tight">
+                    Más información<br>e inscripciones
+                </h2>
+                <div class="w-full bg-white rounded-[2rem] shadow-xl border border-[#decbb7] p-8 text-center space-y-6">
+                    <div>
+                        <h3 class="text-3xl font-black text-[#3e342f] uppercase tracking-tighter">David</h3>
+                        <p class="text-sm font-bold text-[#c25438] mt-1.5 uppercase tracking-wider">(solo WhatsApp)</p>
+                    </div>
+                    <a href="https://wa.me/34679984097" target="_blank" class="inline-block w-full bg-[#25D366] text-white px-4 py-4 rounded-2xl shadow-md hover:scale-[1.02] active:scale-95 transition-all">
+                        <div class="flex items-center justify-center gap-2">
+                            <i data-lucide="message-circle" class="w-5 h-5 shrink-0"></i>
+                            <span class="text-xl sm:text-2xl font-black tracking-tight whitespace-nowrap">679 984 097</span>
+                        </div>
+                    </a>
+                    <div class="pt-6 border-t border-[#decbb7] flex items-center justify-between gap-4 text-left">
+                        <a href="https://docs.google.com/forms/d/e/1FAIpQLSeX8yLwz57MqsTxEpo46AN_IYhZKq4JvRZzXtQPG--a5j0Mnw/viewform?usp=header" target="_blank" class="shrink-0 flex flex-col items-center group">
+                            <div class="p-2 bg-white rounded-2xl border border-[#decbb7] group-hover:border-[#c25438] transition-colors shadow-sm">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://docs.google.com/forms/d/e/1FAIpQLSeX8yLwz57MqsTxEpo46AN_IYhZKq4JvRZzXtQPG--a5j0Mnw/viewform" alt="QR Inscripción" class="w-24 h-24 rounded-lg">
+                            </div>
+                            <span class="text-[9px] text-[#3e342f]/60 font-bold uppercase mt-1 tracking-wider whitespace-nowrap">(Escanea o pulsa)</span>
+                        </a>
+                        <div class="flex-1 space-y-2">
+                            <div>
+                                <span class="text-[9px] font-black text-[#c25438] uppercase tracking-wider block leading-none">Último día de inscripciones:</span>
+                                <span class="text-base font-black text-[#3e342f] uppercase tracking-tight block mt-1">30 de Junio</span>
+                            </div>
+                            <hr class="border-[#decbb7]">
+                            <div>
+                                <span class="text-[9px] font-black text-[#c25438] uppercase tracking-wider block leading-none">Tarifa de inscripción:</span>
+                                <div class="flex items-baseline gap-1 mt-0.5">
+                                    <span class="text-xl font-black text-[#3e342f] tracking-tight">25 €</span>
+                                    <span class="text-[10px] font-black text-[#c25438] uppercase">/ Pareja</span>
+                                </div>
+                                <span class="text-[9px] font-black text-[#c25438] uppercase block mt-1 leading-none">(Antes del primer partido)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCRIPT -->
+    <script>
+        function showView(viewId) {
+            const views = ['main', 'bases', 'resultados', 'horarios', 'info'];
+            views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        lucide.createIcons();
+    </script>
+
+    <!-- GESTOR TORNEO (REACT COMPONENT) -->
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        const SCHEDULE = [
+            { id: 1, time: "Viernes T1", group: "A", p1: "A1", p2: "A2", pista: 1 },
+            { id: 2, time: "Viernes T1", group: "A", p1: "A3", p2: "A4", pista: 2 },
+            { id: 3, time: "Viernes T2", group: "B", p1: "B1", p2: "B2", pista: 1 },
+            { id: 4, time: "Viernes T2", group: "B", p1: "B3", p2: "B4", pista: 2 },
+            { id: 5, time: "Sábado T1", group: "A", p1: "A1", p2: "A3", pista: 1 },
+            { id: 6, time: "Sábado T1", group: "A", p1: "A2", p2: "A4", pista: 2 },
+            { id: 7, time: "Sábado T2", group: "B", p1: "B1", p2: "B3", pista: 1 },
+            { id: 8, time: "Sábado T2", group: "B", p1: "B2", p2: "B4", pista: 2 },
+            { id: 9, time: "Sábado T3", group: "A", p1: "A1", p2: "A4", pista: 1 },
+            { id: 10, time: "Sábado T3", group: "A", p1: "A2", p2: "A3", pista: 2 },
+            { id: 11, time: "Sábado T4", group: "B", p1: "B1", p2: "B4", pista: 1 },
+            { id: 12, time: "Sábado T4", group: "B", p1: "B2", p2: "B3", pista: 2 },
+        ];
+
+        const INITIAL_TEAMS = {
+            A1: "Pareja A1", A2: "Pareja A2", A3: "Pareja A3", A4: "Pareja A4",
+            B1: "Pareja B1", B2: "Pareja B2", B3: "Pareja B3", B4: "Pareja B4"
+        };
+
+        const App = () => {
+            const [teams, setTeams] = useState(INITIAL_TEAMS);
+            const [scores, setScores] = useState({});
+            const [finalScores, setFinalScores] = useState({});
+            const [activeTab, setActiveTab] = useState('teams');
+
+            const handleTeamNameChange = (id, name) => {
+                setTeams(prev => ({ ...prev, [id]: name }));
+            };
+
+            const updateScore = (matchId, teamIdx, value) => {
+                const val = value === "" ? "" : parseInt(value);
+                setScores(prev => ({
+                    ...prev,
+                    [matchId]: { ...(prev[matchId] || { 0: "", 1: "" }), [teamIdx]: val }
+                }));
+            };
+
+            const updateFinalScore = (bracketId, teamIdx, value) => {
+                const val = value === "" ? "" : parseInt(value);
+                setFinalScores(prev => ({
+                    ...prev,
+                    [bracketId]: { ...(prev[bracketId] || { 0: "", 1: "" }), [teamIdx]: val }
+                }));
+            };
+
+            const getStandings = (groupKey) => {
+                const groupTeams = Object.keys(teams).filter(id => id.startsWith(groupKey));
+                const stats = groupTeams.reduce((acc, id) => {
+                    acc[id] = { id, name: teams[id], pts: 0, pj: 0, jf: 0, jc: 0, diff: 0 };
+                    return acc;
+                }, {});
+
+                SCHEDULE.filter(m => m.group === groupKey).forEach(match => {
+                    const result = scores[match.id];
+                    if (result && result[0] !== "" && result[1] !== "") {
+                        const s1 = result[0]; const s2 = result[1];
+                        stats[match.p1].pj += 1; stats[match.p2].pj += 1;
+                        stats[match.p1].jf += s1; stats[match.p1].jc += s2;
+                        stats[match.p2].jf += s2; stats[match.p2].jc += s1;
+                        if (s1 > s2) stats[match.p1].pts += 3;
+                        else if (s2 > s1) stats[match.p2].pts += 3;
+                        else { stats[match.p1].pts += 1; stats[match.p2].pts += 1; }
+                    }
+                });
+
+                return Object.values(stats)
+                    .map(s => ({ ...s, diff: s.jf - s.jc }))
+                    .sort((a, b) => b.pts - a.pts || b.diff - a.diff || b.jf - a.jf);
+            };
+
+            const standingsA = useMemo(() => getStandings('A'), [teams, scores]);
+            const standingsB = useMemo(() => getStandings('B'), [teams, scores]);
+
+            return (
+                <div className="pb-20">
+                    <nav className="bg-[#c25438] text-white p-4 sticky top-0 z-50 shadow-lg border-b border-lime-500/30">
+                        {/* Botón Volver añadido dentro del Header de React */}
+                        <button onClick={() => window.showView('main')} className="mb-3 flex items-center text-lime-400 font-bold text-sm hover:text-white transition-colors">
+                            ← Volver al Menú
+                        </button>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
+                            <h1 className="font-bebas text-3xl tracking-widest text-lime-400">RESULTADOS <span className="text-white opacity-50 text-xl">Clasificaciones</span></h1>
+                            <div className="flex gap-2 bg-slate-800 p-1.5 rounded-2xl w-full sm:w-auto">
+                                <button onClick={() => setActiveTab('teams')} className={`flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'teams' ? 'bg-lime-500 text-slate-900 shadow-lg' : 'text-slate-400 hover:text-white'}`}>Equipos</button>
+                                <button onClick={() => setActiveTab('matches')} className={`flex-1 sm:flex-none px-5 py-2 rounded-xl text-xs font-black uppercase transition-all ${activeTab === 'matches' ? 'bg-lime-500 text-slate-900 shadow-lg' : 'text-slate-400 hover:text-white'}`}>Resultados</button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="p-4 mt-2">
+                        {activeTab === 'teams' ? (
+                            <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 grid md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                                {['A', 'B'].map(group => (
+                                    <div key={group} className="space-y-6">
+                                        <div className="flex items-center gap-4 border-b pb-4 border-slate-100">
+                                            <div className="bg-lime-500 text-slate-900 font-black px-3 py-1 rounded-lg text-sm">GRUPO {group}</div>
+                                            <h3 className="font-black text-slate-400 uppercase tracking-widest text-xs">Gestión de Parejas</h3>
+                                        </div>
+                                        {Object.keys(teams).filter(id => id.startsWith(group)).map(id => (
+                                            <div key={id} className="relative">
+                                                <span className="absolute -top-2 left-4 px-2 bg-white text-[10px] font-black text-lime-600 z-10 border rounded-full">{id}</span>
+                                                <input type="text" value={teams[id]} onChange={(e) => handleTeamNameChange(id, e.target.value)} className="w-full border-2 border-slate-100 rounded-2xl p-4 font-bold outline-none focus:border-lime-500 bg-slate-50/50 transition-all focus:bg-white" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-12 animate-in fade-in duration-500">
+                                <div className="grid lg:grid-cols-12 gap-8">
+                                    {/* LIGA */}
+                                    <div className="lg:col-span-7 space-y-4">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
+                                                <div className="w-1.5 h-6 bg-lime-500 rounded-full"></div> Calendario Liga
+                                            </h2>
+                                            <div className="text-[9px] font-black text-slate-400 bg-slate-200 px-2 py-1 rounded-full">2 PISTAS</div>
+                                        </div>
+                                        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-x-auto overflow-y-hidden">
+                                            <table className="w-full text-left min-w-[300px]">
+                                                <thead className="bg-slate-50 border-b border-slate-100">
+                                                    <tr>
+                                                        <th className="p-3 text-[10px] font-black uppercase text-slate-400">Turno / Pista</th>
+                                                        <th className="p-3 text-[10px] font-black uppercase text-slate-400">Enfrentamiento</th>
+                                                        <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">Resultado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {SCHEDULE.map(m => (
+                                                        <tr key={m.id} className="hover:bg-lime-50/30 transition-colors">
+                                                            <td className="p-3">
+                                                                <div className="font-black text-slate-700 text-xs">{m.time}</div>
+                                                                <div className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${m.pista === 1 ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>Pista {m.pista}</div>
+                                                            </td>
+                                                            <td className="p-3">
+                                                                <div className="font-bold text-slate-800 text-xs truncate max-w-[120px]">{teams[m.p1]}</div>
+                                                                <div className="text-[9px] text-slate-300 font-black my-0.5 italic">vs</div>
+                                                                <div className="font-bold text-slate-800 text-xs truncate max-w-[120px]">{teams[m.p2]}</div>
+                                                            </td>
+                                                            <td className="p-3">
+                                                                <div className="flex flex-col gap-1 items-center">
+                                                                    <input type="number" className="w-10 h-8 border border-slate-200 rounded-lg text-center font-black text-xs focus:border-lime-500 outline-none bg-slate-50" 
+                                                                        value={scores[m.id]?.[0] ?? ""} onChange={(e) => updateScore(m.id, 0, e.target.value)} placeholder="-" />
+                                                                    <input type="number" className="w-10 h-8 border border-slate-200 rounded-lg text-center font-black text-xs focus:border-lime-500 outline-none bg-slate-50" 
+                                                                        value={scores[m.id]?.[1] ?? ""} onChange={(e) => updateScore(m.id, 1, e.target.value)} placeholder="-" />
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* CLASIFICACIÓN */}
+                                    <div className="lg:col-span-5 space-y-6">
+                                        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-3">
+                                            <div className="w-1.5 h-6 bg-slate-900 rounded-full"></div> Tablas
+                                        </h2>
+                                        {[ {label: 'GRUPO A', data: standingsA}, {label: 'GRUPO B', data: standingsB} ].map((g, i) => (
+                                            <div key={i} className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-x-auto">
+                                                <div className="bg-slate-900 text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest flex justify-between">
+                                                    <span>{g.label}</span>
+                                                    <span className="text-lime-400">FASE LIGA</span>
+                                                </div>
+                                                <table className="w-full text-xs min-w-[280px]">
+                                                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-black">
+                                                        <tr>
+                                                            <th className="p-2 text-center text-[10px]">#</th>
+                                                            <th className="p-2 text-left text-[10px]">PAREJA</th>
+                                                            <th className="p-2 text-center text-[10px]">PTS</th>
+                                                            <th className="p-2 text-center text-[10px]">JG</th>
+                                                            <th className="p-2 text-center text-[10px]">JP</th>
+                                                            <th className="p-2 text-center text-lime-600 text-[10px]">DF</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 font-bold">
+                                                        {g.data.map((r, idx) => (
+                                                            <tr key={r.id} className={idx < 2 ? "bg-lime-50/50" : ""}>
+                                                                <td className="p-2 text-center text-slate-400">{idx+1}</td>
+                                                                <td className="p-2 text-slate-800 truncate max-w-[100px] text-[11px]">{r.name}</td>
+                                                                <td className="p-2 text-center font-black text-slate-900">{r.pts}</td>
+                                                                <td className="p-2 text-center text-slate-500">{r.jf}</td>
+                                                                <td className="p-2 text-center text-slate-500">{r.jc}</td>
+                                                                <td className={`p-2 text-center ${r.diff > 0 ? 'text-lime-600' : r.diff < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                                                                    {r.diff > 0 ? `+${r.diff}` : r.diff}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* FASE FINAL COMPLETA */}
+                                <section className="pt-8 border-t-2 border-slate-200">
+                                    <div className="text-center mb-8">
+                                        <h2 className="text-4xl font-bebas tracking-[0.1em] text-slate-900">CUADRO DE HONOR</h2>
+                                        <p className="text-[10px] font-black text-lime-600 uppercase tracking-widest">Sábado Tarde • Pistas Simultáneas</p>
+                                    </div>
+
+                                    <div className="space-y-12">
+                                        {/* BLOQUE 1: SEMIFINALES */}
+                                        <div className="space-y-6">
+                                            <h3 className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Turno 1: Semifinales Simultáneas</h3>
+                                            <div className="grid sm:grid-cols-2 gap-6">
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-900 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 1 • SF Élite 1</div>
+                                                    <BracketCard id="sf1" p1={standingsA[0].name} p2={standingsB[1].name} label="1ºA vs 2ºB" score={finalScores['sf1']} update={(t, v) => updateFinalScore('sf1', t, v)} />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-900 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 2 • SF Élite 2</div>
+                                                    <BracketCard id="sf2" p1={standingsB[0].name} p2={standingsA[1].name} label="1ºB vs 2ºA" score={finalScores['sf2']} update={(t, v) => updateFinalScore('sf2', t, v)} />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-200 text-slate-600 text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 1 • SF Consolación 3</div>
+                                                    <BracketCard id="sf3" p1={standingsA[2].name} p2={standingsB[3].name} label="3ºA vs 4ºB" score={finalScores['sf3']} update={(t, v) => updateFinalScore('sf3', t, v)} />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-200 text-slate-600 text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 2 • SF Consolación 4</div>
+                                                    <BracketCard id="sf4" p1={standingsB[2].name} p2={standingsA[3].name} label="3ºB vs 4ºA" score={finalScores['sf4']} update={(t, v) => updateFinalScore('sf4', t, v)} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* BLOQUE 2: PUESTOS CLASIFICACIÓN */}
+                                        <div className="space-y-6 bg-slate-100/50 p-6 rounded-3xl border-2 border-dashed border-slate-200">
+                                            <h3 className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Turno 2: Finales Menores Simultáneas</h3>
+                                            <div className="grid sm:grid-cols-2 gap-6">
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-400 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 1 • 7º y 8º PUESTO</div>
+                                                    <BracketCard id="p78" p1="Perdedor SF3" p2="Perdedor SF4" score={finalScores['p78']} update={(t, v) => updateFinalScore('p78', t, v)} />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="bg-slate-500 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest">Pista 2 • 3º y 4º PUESTO</div>
+                                                    <BracketCard id="p34" p1="Perdedor SF1" p2="Perdedor SF2" score={finalScores['p34']} update={(t, v) => updateFinalScore('p34', t, v)} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* BLOQUE 3: GRANDES FINALES */}
+                                        <div className="space-y-6 pb-6">
+                                            <h3 className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Turno 3: Grandes Finales Simultáneas</h3>
+                                            <div className="grid sm:grid-cols-2 gap-6">
+                                                <div className="space-y-3">
+                                                    <div className="bg-blue-600 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest shadow-lg shadow-blue-200">Pista 1 • FINAL CONSOLACIÓN</div>
+                                                    <BracketCard id="fcons" p1="Ganador SF3" p2="Ganador SF4" score={finalScores['fcons']} update={(t, v) => updateFinalScore('fcons', t, v)} />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="bg-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-full inline-block uppercase tracking-widest shadow-lg shadow-amber-200 animate-pulse">Pista 2 • GRAN FINAL ÉLITE</div>
+                                                    <BracketCard id="felite" p1="Ganador SF1" p2="Ganador SF2" highlight score={finalScores['felite']} update={(t, v) => updateFinalScore('felite', t, v)} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const BracketCard = ({ id, p1, p2, label, highlight, score, update }) => (
+            <div className={`p-4 rounded-2xl border transition-all ${highlight ? 'border-amber-400 bg-amber-50/50 shadow-xl' : 'border-slate-200 bg-white shadow-sm'}`}>
+                <div className="flex justify-between items-center mb-3">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">ID: {id.toUpperCase()}</span>
+                    {label && <span className="text-[8px] font-black text-lime-700 bg-lime-100 px-2 py-0.5 rounded-full uppercase italic">{label}</span>}
+                </div>
+                <div className="space-y-3">
+                    <div className="flex justify-between items-center group">
+                        <span className="text-xs font-black text-slate-800 truncate pr-2">{p1}</span>
+                        <input type="number" value={score?.[0] ?? ""} onChange={(e) => update(0, e.target.value)} placeholder="0" className="w-10 h-8 text-center border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-lime-500 focus:bg-white bg-slate-50 transition-all shrink-0" />
+                    </div>
+                    <div className="h-[1px] bg-slate-100 w-full"></div>
+                    <div className="flex justify-between items-center group">
+                        <span className="text-xs font-black text-slate-800 truncate pr-2">{p2}</span>
+                        <input type="number" value={score?.[1] ?? ""} onChange={(e) => update(1, e.target.value)} placeholder="0" className="w-10 h-8 text-center border border-slate-200 rounded-lg font-black text-sm outline-none focus:border-lime-500 focus:bg-white bg-slate-50 transition-all shrink-0" />
+                    </div>
+                </div>
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('react-root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
