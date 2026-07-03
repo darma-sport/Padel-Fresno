@@ -955,44 +955,7 @@
 
         const INITIAL_DATA = null; 
         
-        const DEFAULT_STATE = {
-            "t5": {
-                "teams": [
-                    {"id":"f1","name":"Pareja F1"},
-                    {"id":"f2","name":"Pareja F2"},
-                    {"id":"f3","name":"Pareja F3"},
-                    {"id":"f4","name":"Pareja F4"},
-                    {"id":"f5","name":"Pareja F5"}
-                ],
-                "matches": [
-                    {"id":"m1","t1":"f1","t2":"f2","s1":null,"s2":null},
-                    {"id":"m2","t1":"f1","t2":"f3","s1":null,"s2":null},
-                    {"id":"m3","t1":"f1","t2":"f4","s1":null,"s2":null},
-                    {"id":"m4","t1":"f1","t2":"f5","s1":null,"s2":null},
-                    {"id":"m5","t1":"f2","t2":"f3","s1":null,"s2":null},
-                    {"id":"m6","t1":"f2","t2":"f4","s1":null,"s2":null},
-                    {"id":"m7","t1":"f2","t2":"f5","s1":null,"s2":null},
-                    {"id":"m8","t1":"f3","t2":"f4","s1":null,"s2":null},
-                    {"id":"m9","t1":"f3","t2":"f5","s1":null,"s2":null},
-                    {"id":"m10","t1":"f4","t2":"f5","s1":null,"s2":null}
-                ],
-                "playoffs": {
-                    "previo": {"s1":null,"s2":null},
-                    "sf1": {"s1":null,"s2":null},
-                    "sf2": {"s1":null,"s2":null},
-                    "final": {"s1":null,"s2":null},
-                    "third": {"s1":null,"s2":null}
-                }
-            },
-            "t10": {
-                "teamsA":[{"id":"a1","name":"Pareja A1"},{"id":"a2","name":"Pareja A2"},{"id":"a3","name":"Pareja A3"},{"id":"a4","name":"Pareja A4"},{"id":"a5","name":"Pareja A5"}],
-                "teamsB":[{"id":"b1","name":"Pareja B1"},{"id":"b2","name":"Pareja B2"},{"id":"b3","name":"Pareja B3"},{"id":"b4","name":"Pareja B4"},{"id":"b5","name":"Pareja B5"}],
-                "matchesA":[{"id":"ma1","t1":"a1","t2":"a2","s1":null,"s2":null},{"id":"ma2","t1":"a1","t2":"a3","s1":null,"s2":null},{"id":"ma3","t1":"a1","t2":"a4","s1":null,"s2":null},{"id":"ma4","t1":"a1","t2":"a5","s1":null,"s2":null},{"id":"ma5","t1":"a2","t2":"a3","s1":null,"s2":null},{"id":"ma6","t1":"a2","t2":"a4","s1":null,"s2":null},{"id":"ma7","t1":"a2","t2":"a5","s1":null,"s2":null},{"id":"ma8","t1":"a3","t2":"a4","s1":null,"s2":null},{"id":"ma9","t1":"a3","t2":"a5","s1":null,"s2":null},{"id":"ma10","t1":"a4","t2":"a5","s1":null,"s2":null}],
-                "matchesB":[{"id":"mb1","t1":"b1","t2":"b2","s1":null,"s2":null},{"id":"mb2","t1":"b1","t2":"b3","s1":null,"s2":null},{"id":"mb3","t1":"b1","t2":"b4","s1":null,"s2":null},{"id":"mb4","t1":"b1","t2":"b5","s1":null,"s2":null},{"id":"mb5","t1":"b2","t2":"b3","s1":null,"s2":null},{"id":"mb6","t1":"b2","t2":"b4","s1":null,"s2":null},{"id":"mb7","t1":"b2","t2":"b5","s1":null,"s2":null},{"id":"mb8","t1":"b3","t2":"b4","s1":null,"s2":null},{"id":"mb9","t1":"b3","t2":"b5","s1":null,"s2":null},{"id":"mb10","t1":"b4","t2":"b5","s1":null,"s2":null}],
-                "playoffsOro":{"sf1":{"s1":null,"s2":null},"sf2":{"s1":null,"s2":null},"final":{"s1":null,"s2":null},"third":{"s1":null,"s2":null}},
-                "playoffsPlata":{"sf3":{"s1":null,"s2":null},"sf4":{"s1":null,"s2":null},"finalPlata":{"s1":null,"s2":null},"farolillo":{"s1":null,"s2":null}}
-            }
-        };
+        const DEFAULT_STATE = {"t5":{"teams":[{"id":"f1","name":"María y Marta"},{"id":"f2","name":"Alicia y María Y."},{"id":"f3","name":"Lidia y Celia"},{"id":"f4","name":"Hontanares y Ester"},{"id":"f5","name":"Yolanda y M. Cruz"}],"matches":[{"id":"m1","t1":"f1","t2":"f2","s1":null,"s2":null},{"id":"m2","t1":"f1","t2":"f3","s1":null,"s2":null},{"id":"m3","t1":"f1","t2":"f4","s1":null,"s2":null},{"id":"m4","t1":"f1","t2":"f5","s1":null,"s2":null},{"id":"m5","t1":"f2","t2":"f3","s1":null,"s2":null},{"id":"m6","t1":"f2","t2":"f4","s1":null,"s2":null},{"id":"m7","t1":"f2","t2":"f5","s1":null,"s2":null},{"id":"m8","t1":"f3","t2":"f4","s1":null,"s2":null},{"id":"m9","t1":"f3","t2":"f5","s1":null,"s2":null},{"id":"m10","t1":"f4","t2":"f5","s1":null,"s2":null}],"playoffs":{"previo":{"s1":null,"s2":null},"sf1":{"s1":null,"s2":null},"sf2":{"s1":null,"s2":null},"final":{"s1":null,"s2":null},"third":{"s1":null,"s2":null}}},"t10":{"teamsA":[{"id":"a1","name":"Luis y David"},{"id":"a2","name":"Ana y Manuel"},{"id":"a3","name":"Julián y David A."},{"id":"a4","name":"Andrés y Sergio "},{"id":"a5","name":"Andrés y Sergio "}],"teamsB":[{"id":"b1","name":"Pablo y Héctor"},{"id":"b2","name":"Carlos y Juan C."},{"id":"b3","name":"Ignacio y Raul"},{"id":"b4","name":"Abel y Rubén"},{"id":"b5","name":"Ángel y Héctor"}],"matchesA":[{"id":"ma1","t1":"a1","t2":"a2","s1":null,"s2":null},{"id":"ma2","t1":"a1","t2":"a3","s1":null,"s2":null},{"id":"ma3","t1":"a1","t2":"a4","s1":null,"s2":null},{"id":"ma4","t1":"a1","t2":"a5","s1":null,"s2":null},{"id":"ma5","t1":"a2","t2":"a3","s1":null,"s2":null},{"id":"ma6","t1":"a2","t2":"a4","s1":null,"s2":null},{"id":"ma7","t1":"a2","t2":"a5","s1":null,"s2":null},{"id":"ma8","t1":"a3","t2":"a4","s1":null,"s2":null},{"id":"ma9","t1":"a3","t2":"a5","s1":null,"s2":null},{"id":"ma10","t1":"a4","t2":"a5","s1":null,"s2":null}],"matchesB":[{"id":"mb1","t1":"b1","t2":"b2","s1":null,"s2":null},{"id":"mb2","t1":"b1","t2":"b3","s1":null,"s2":null},{"id":"mb3","t1":"b1","t2":"b4","s1":null,"s2":null},{"id":"mb4","t1":"b1","t2":"b5","s1":null,"s2":null},{"id":"mb5","t1":"b2","t2":"b3","s1":null,"s2":null},{"id":"mb6","t1":"b2","t2":"b4","s1":null,"s2":null},{"id":"mb7","t1":"b2","t2":"b5","s1":null,"s2":null},{"id":"mb8","t1":"b3","t2":"b4","s1":null,"s2":null},{"id":"mb9","t1":"b3","t2":"b5","s1":null,"s2":null},{"id":"mb10","t1":"b4","t2":"b5","s1":null,"s2":null}],"playoffsOro":{"sf1":{"s1":null,"s2":null},"sf2":{"s1":null,"s2":null},"final":{"s1":null,"s2":null},"third":{"s1":null,"s2":null}},"playoffsPlata":{"sf3":{"s1":null,"s2":null},"sf4":{"s1":null,"s2":null},"finalPlata":{"s1":null,"s2":null},"farolillo":{"s1":null,"s2":null}}}}
 
         let appState;
         try {
