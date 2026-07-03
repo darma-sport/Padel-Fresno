@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>I Torneo de Pádel Fresno de Cantespino</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ebdcc9; 
+            color: #3e342f;
+        }
+        
+        /* Animaciones y utilidades */
+        .animate-fade { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Componentes de Tabs */
+        .tab-active { background-color: #c25438; color: #fefbc8; border-color: #c25438; }
+        .tab-inactive { background-color: #decbb7; color: #3e342f; border-color: transparent; }
+        
+        /* Tablas de Resultados */
+        .table-resumen { table-layout: fixed; width: 100%; }
+        .table-resumen th, .table-resumen td { border: 1px solid #decbb7; padding: 6px 2px; vertical-align: middle; text-align: center; overflow: hidden; }
+        .table-resumen th { background-color: #3e342f; color: #fef9c3; font-size: 0.7rem; text-transform: uppercase; }
+        .table-resumen tr:nth-child(even) td { background-color: #fcf9f2; }
+        .sticky-col { position: sticky; left: 0; background-color: #fef9c3 !important; z-index: 10; box-shadow: 3px 0 5px rgba(0,0,0,0.05); text-align: center !important; }
+        .empty-cell { background-color: #f5f0e6; }
+
+        /* Clases específicas para el ancho de columnas en clasificación */
+        .col-p { width: 20px; }
+        .col-ptos { width: 35px; }
+        .col-narrow { width: 25px; }
+        .col-pareja { width: auto; text-align: left !important; padding-left: 8px !important; }
+
+        /* Componentes de Partidos y Cuadros */
+        .match-box { background: white; border: 1px solid #decbb7; border-radius: 0.5rem; padding: 0.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 0.8rem; margin-bottom: 0.5rem; }
+        .team-name { font-weight: 600; flex: 1; }
+        .score-box { background: #ebdcc9; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-weight: 900; color: #c25438; text-align: center; min-width: 2.5rem; }
+        
+        .bracket-col { display: flex; flex-direction: column; justify-content: space-around; gap: 1rem; }
+        .bracket-match { background: white; border: 2px solid #3e342f; border-radius: 6px; overflow: hidden; width: 100%; max-width: 240px; min-width: 200px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
+        .bracket-team { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 0.75rem; font-weight: 600; }
+        .bracket-team:last-child { border-bottom: none; }
+        .bracket-team.winner { background-color: #e6f4ea; color: #1e8e3e; }
+        .bracket-score { font-weight: 900; color: #c25438; margin-left: 8px; min-width: 15px; text-align: right; }
+        .bracket-title { background: #3e342f; color: white; text-align: center; font-size: 0.65rem; padding: 4px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Inputs Administrador */
+        input.edit-input { border: 2px dashed #c25438; border-radius: 4px; padding: 2px 4px; text-align: left; width: 100%; font-weight: bold; background: #fff5f2; font-size: 0.75rem; }
+        input.edit-score { width: 2.5rem; font-size: 0.9rem; text-align: center; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Estilos de optimización para impresión PDF en dos páginas */
+        .pdf-print-mode {
+            background-color: #ffffff !important;
+            padding: 10px 15px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .pdf-print-mode .pdf-hide {
+            display: none !important;
+        }
+        .pdf-print-mode .pdf-header {
+            display: block !important;
+        }
+        .pdf-print-mode .grid-matches {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+        }
+        .pdf-print-mode .match-card {
+            padding: 6px !important;
+            border-color: #ddd !important;
+        }
+        .pdf-print-mode .match-card .text-\\[11px\\] {
+            font-size: 10px !important;
+        }
+        .pdf-print-mode h3 {
+            font-size: 12px !important;
+            margin-bottom: 6px !important;
+            padding-bottom: 2px !important;
+        }
+        .pdf-print-mode .page-break {
+            page-break-before: always;
+            margin-top: 0 !important;
+            padding-top: 10px !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-0 sm:p-4">
+
+    <!-- CONTENEDOR TIPO MÓVIL (APP) -->
+    <div class="max-w-md w-full min-h-[100dvh] sm:min-h-[850px] sm:max-h-[90vh] bg-[#f5f0e6] shadow-2xl relative overflow-hidden flex flex-col sm:rounded-[3rem] border-x sm:border border-[#decbb7]">
+        
+        <!-- ================= PANTALLA PRINCIPAL ================= -->
+        <div id="view-main" class="flex-1 flex flex-col animate-fade overflow-y-auto pb-6">
+            
+            <div class="pt-10 pb-4 text-center flex flex-col items-center px-4">
+                <div class="mb-4 flex flex-col items-center">
+                    <img src="https://i.postimg.cc/RWq0QwPn/Escudo-Fresno.jpg" alt="Escudo Fresno" class="w-36 h-36 object-contain drop-shadow-md">
+                </div>
+
+                <div class="flex flex-col items-center gap-1">
+                    <div class="bg-[#c25438] text-[#fef9c3] px-6 py-3 rounded-2xl shadow-lg border-b-4 border-[#9e3f28] font-black uppercase text-lg tracking-tight text-center max-w-[340px]">
+                        I TORNEO PÁDEL FRESNO DE CANTESPINO
+                    </div>
+                    <p class="text-[11px] font-black text-[#c25438] uppercase tracking-widest mt-2 bg-[#fef9c3]/80 px-3 py-1 rounded-full border border-[#fde047]">
+                        Días 3, 4 y 5 de Julio de 2026
+                    </p>
+                </div>
+                
+                <div class="mt-4 bg-[#c25438] text-[#fef9c3] px-6 py-2.5 rounded-xl shadow-lg border-b-4 border-[#9e3f28] font-black uppercase text-base tracking-wide">
+                    Femenino y Masculino
+                </div>
+
+                <p class="text-[11px] font-black text-[#c25438] uppercase tracking-widest mt-3 bg-[#fef9c3]/80 px-4 py-1.5 rounded-full border border-[#fde047] text-center max-w-[320px]">
+                    Sede principal: PRADO PINILLA
+                </p>
+            </div>
+
+            <div class="px-6 mb-6 space-y-3">
+                <div class="flex items-center gap-2 mb-3 pl-2">
+                    <i data-lucide="info" class="w-4 h-4 text-[#3e342f]"></i>
+                    <h3 class="text-sm font-black text-[#3e342f] uppercase tracking-widest leading-none">Información General</h3>
+                </div>
+
+                <button onclick="showView('bases')" class="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-sm border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="p-1.5 bg-[#fef9c3]/50 rounded-lg text-[#c25438]"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-[11px]">Bases de Competición</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#decbb7]"></i>
+                </button>
+
+                <button onclick="showView('horarios')" class="flex items-center justify-between w-full p-3 bg-white rounded-2xl shadow-sm border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="p-1.5 bg-[#fef9c3]/50 rounded-lg text-[#c25438]"><i data-lucide="calendar" class="w-4 h-4"></i></div>
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-[11px]">CALENDARIO. HORARIOS</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-[#decbb7]"></i>
+                </button>
+            </div>
+
+            <div class="px-6 mb-6 space-y-3">
+                <div class="flex items-center gap-2 mb-3 pl-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-[#c25438]"></i>
+                    <h3 class="text-sm font-black text-[#3e342f] uppercase tracking-widest leading-none">Resultados en Directo</h3>
+                </div>
+
+                <button onclick="showView('t5')" class="flex items-center justify-between w-full p-4 bg-white rounded-2xl shadow-sm border-l-4 border-l-[#c25438] border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex flex-col text-left">
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-sm">Torneo Femenino</span>
+                        <span class="text-[#c25438] font-bold text-[10px] uppercase">Ver Clasificación y Cuadro</span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-[#f5f0e6] flex items-center justify-center group-hover:bg-[#c25438] group-hover:text-white transition-colors text-[#c25438]">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </div>
+                </button>
+
+                <button onclick="showView('t10')" class="flex items-center justify-between w-full p-4 bg-white rounded-2xl shadow-sm border-l-4 border-l-[#3e342f] border border-[#decbb7] group active:scale-95 transition-all">
+                    <div class="flex flex-col text-left">
+                        <span class="font-black text-[#3e342f] uppercase tracking-tight text-sm">Torneo Masculino</span>
+                        <span class="text-[#3e342f]/60 font-bold text-[10px] uppercase">Ver Clasificación y Cuadro</span>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-[#f5f0e6] flex items-center justify-center group-hover:bg-[#3e342f] group-hover:text-white transition-colors text-[#3e342f]">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </div>
+                </button>
+            </div>
+
+            <div class="px-6 space-y-3 mt-auto">
+                <button onclick="showView('info')" class="flex items-center justify-between w-full p-4 bg-[#fef9c3] rounded-2xl shadow-md border-2 border-[#c25438] group active:scale-95 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="p-1.5 bg-[#c25438] rounded-lg text-[#fef9c3]"><i data-lucide="pencil" class="w-4 h-4"></i></div>
+                        <span class="font-black uppercase tracking-tight text-xs text-[#c25438]">Contacto</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-[#c25438] font-bold"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= VISTAS DE TORNEOS ================= -->
+        
+        <div id="view-t5" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-10 pb-4 bg-[#f5f0e6] sticky top-0 z-20 border-b border-[#decbb7]">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="showView('main')" class="flex items-center text-[#c25438] font-bold text-xs">
+                       <i data-lucide="arrow-left" class="mr-1 w-4 h-4"></i> Inicio
+                    </button>
+                    <button onclick="exportViewToPDF('view-t5')" class="flex items-center text-[#3e342f] font-bold text-xs border border-[#decbb7] px-2 py-1 rounded bg-white shadow-sm hover:bg-[#fef9c3] transition-colors">
+                       <i data-lucide="download" class="mr-1 w-3 h-3 text-[#c25438]"></i> PDF
+                    </button>
+                </div>
+                <h2 class="text-xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter leading-tight">
+                    <i data-lucide="medal" class="text-[#c25438] w-5 h-5"></i> FEMENINO (5 Parejas)
+                </h2>
+            </div>
+            
+            <div class="p-4 pb-12 space-y-5">
+                <div class="flex gap-2 border-b border-[#decbb7] pb-2">
+                    <button id="btn-t5-liga" onclick="switchTab('t5', 'liga')" class="flex-1 py-2 font-black rounded-t-lg tab-active text-[10px] uppercase transition-colors tracking-wider">Fase de Liga</button>
+                    <button id="btn-t5-elim" onclick="switchTab('t5', 'elim')" class="flex-1 py-2 font-black rounded-t-lg tab-inactive text-[10px] uppercase transition-colors tracking-wider">Fase Eliminatoria</button>
+                </div>
+
+                <div id="t5-liga" class="space-y-5">
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border border-[#decbb7]">
+                        <h3 class="text-xs font-black mb-3 text-[#c25438] uppercase">Clasificación</h3>
+                        <div class="w-full">
+                            <table class="table-resumen w-full text-[10px]" id="t5-table"></table>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-4 border border-[#decbb7]">
+                        <h3 class="text-xs font-black mb-3 text-[#c25438] uppercase">Partidos (Liga)</h3>
+                        <div id="t5-matches" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+
+                <div id="t5-elim" class="hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border border-[#decbb7]">
+                        <h3 class="text-xs font-black mb-4 text-[#c25438] text-center uppercase tracking-widest">Fase Final - ORO</h3>
+                        <div class="flex justify-center min-w-[700px] gap-6" id="t5-bracket"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-t10" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-10 pb-4 bg-[#f5f0e6] sticky top-0 z-20 border-b border-[#decbb7]">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="showView('main')" class="flex items-center text-[#c25438] font-bold text-xs">
+                       <i data-lucide="arrow-left" class="mr-1 w-4 h-4"></i> Inicio
+                    </button>
+                    <button onclick="exportViewToPDF('view-t10')" class="flex items-center text-[#3e342f] font-bold text-xs border border-[#decbb7] px-2 py-1 rounded bg-white shadow-sm hover:bg-[#fef9c3] transition-colors">
+                       <i data-lucide="download" class="mr-1 w-3 h-3 text-[#c25438]"></i> PDF
+                    </button>
+                </div>
+                <h2 class="text-xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter leading-tight">
+                    <i data-lucide="swords" class="text-[#3e342f] w-5 h-5"></i> MASCULINO (10 Parejas)
+                </h2>
+            </div>
+            
+            <div class="p-4 pb-12 space-y-5">
+                <div class="flex gap-2 border-b border-[#decbb7] pb-2">
+                    <button id="btn-t10-liga" onclick="switchTab('t10', 'liga')" class="flex-1 py-2 font-black rounded-t-lg tab-active text-[10px] uppercase transition-colors tracking-wider">Fase Grupos</button>
+                    <button id="btn-t10-elim" onclick="switchTab('t10', 'elim')" class="flex-1 py-2 font-black rounded-t-lg tab-inactive text-[10px] uppercase transition-colors tracking-wider">Fase Final</button>
+                </div>
+
+                <div id="t10-liga" class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border border-[#decbb7]">
+                        <h3 class="text-xs font-black mb-3 text-[#c25438] uppercase">Grupo A</h3>
+                        <div class="w-full mb-4">
+                            <table class="table-resumen w-full text-[10px]" id="t10a-table"></table>
+                        </div>
+                        <h4 class="font-bold mb-2 text-[9px] uppercase text-gray-500">Partidos Grupo A</h4>
+                        <div id="t10a-matches" class="flex flex-col gap-2"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border border-[#decbb7]">
+                        <h3 class="text-xs font-black mb-3 text-[#c25438] uppercase">Grupo B</h3>
+                        <div class="w-full mb-4">
+                            <table class="table-resumen w-full text-[10px]" id="t10b-table"></table>
+                        </div>
+                        <h4 class="font-bold mb-2 text-[9px] uppercase text-gray-500">Partidos Grupo B</h4>
+                        <div id="t10b-matches" class="flex flex-col gap-2"></div>
+                    </div>
+                </div>
+
+                <div id="t10-elim" class="hidden space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border-t-4 border-yellow-500">
+                        <h3 class="text-sm font-black mb-4 text-yellow-600 text-center uppercase tracking-widest">🏆 ZONA ORO (Élite)</h3>
+                        <div class="flex justify-center min-w-[480px] gap-6" id="t10-bracket-oro"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-4 overflow-x-auto border-t-4 border-gray-400">
+                        <h3 class="text-sm font-black mb-4 text-gray-600 text-center uppercase tracking-widest">🥈 ZONA PLATA (Consolación)</h3>
+                        <div class="flex justify-center min-w-[480px] gap-6" id="t10-bracket-plata"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTAS DE INFORMACIÓN ================= -->
+        
+        <div id="view-bases" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-10 pb-4 bg-[#f5f0e6] sticky top-0 z-10 border-b border-[#decbb7]">
+                <button onclick="showView('main')" class="mb-3 flex items-center text-[#c25438] font-bold text-xs">
+                   <i data-lucide="arrow-left" class="mr-1 w-4 h-4"></i> Volver
+                </button>
+                <h2 class="text-xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter">
+                    <i data-lucide="file-text" class="text-[#c25438] w-5 h-5"></i> BASES COMPETICIÓN
+                </h2>
+            </div>
+            
+            <div class="p-6 space-y-4 pb-12 text-xs text-[#3e342f] leading-relaxed">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-[#decbb7] space-y-4">
+                    <div>
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-[10px] mb-1">Sistema</span>
+                        <p class="font-bold text-[11px]">Torneos femenino y masculino simultáneos.</p>
+                        <ul class="list-disc ml-4 mt-2 space-y-1">
+                            <li><span class="font-bold">Fase de liga.-</span> Grupos de 5 parejas en cada categoría (excepto grupos especiales).</li>
+                            <li><span class="font-bold">Cabezas de serie.-</span> En la elaboración de grupos, se tendrá en cuenta ranking de Riaza y Playtomic de Madrid.</li>
+                            <li><span class="font-bold">Horarios.-</span> Se tendrá en cuenta las sugerencias de horarios en la medida de lo posible.</li>
+                            <li><span class="font-bold">Sorteo de grupos.-</span> Transmisión en directo por RRSS.</li>
+                            <li><span class="font-bold">Eliminatorias en dos zonas.-</span> Élite (1er y 2do de liga) y zona Plata.</li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#f5f0e6]">
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-[10px] mb-1">Parejas</span>
+                        <ul class="list-disc ml-4 space-y-1">
+                            <li>Mínimo 4 y máximo 16 parejas en cada categoría.</li>
+                            <li>Número par o impar de parejas con formato adaptado.</li>
+                            <li>Solo mujeres en torneo femenino.</li>
+                            <li>Se admiten parejas mixtas en torneo masculino.</li>
+                            <li>Se admite una única sustitución en fase liga por causa justificada.</li>
+                        </ul>
+                    </div>
+
+                    <div class="pt-4 border-t border-[#f5f0e6]">
+                        <span class="font-black text-[#c25438] block uppercase tracking-widest text-[10px] mb-1">Partidos</span>
+                        <ul class="list-disc ml-4 mt-1 space-y-1">
+                            <li><span class="font-bold text-[#3e342f]">Fase Grupos.-</span> Un set a 6 juegos con "Punto de oro" y "Tie-break" (7 puntos).</li>
+                            <li><span class="font-bold text-[#3e342f]">Cuartos y Semis Élite.-</span> Un set a 8 juegos con "Super tie-break" (11 puntos).</li>
+                            <li><span class="font-bold text-[#3e342f]">Finales Élite.-</span> DOS set a 6 juegos con tie-break.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-[#fef9c3] p-5 rounded-2xl shadow-sm border border-[#c25438]/20 text-[#c25438]">
+                    <span class="text-[#c25438] font-black text-[10px] uppercase tracking-widest block mb-2">CLASIFICACIÓN (Fase de liga)</span>
+                    <ol class="list-decimal ml-4 space-y-1 font-bold text-[11px]">
+                        <li>Puntos obtenidos (Victoria 1 pto, Derrota 0 ptos)</li>
+                        <li>Enfrentamiento Directo entre empatados</li>
+                        <li>Diferencia de juegos total (Ganados-Perdidos)</li>
+                        <li>Sorteo</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-horarios" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-10 pb-4 bg-[#f5f0e6] sticky top-0 z-20 border-b border-[#decbb7] pdf-hide">
+                <div class="flex justify-between items-center mb-3">
+                    <button onclick="showView('main')" class="flex items-center text-[#c25438] font-bold text-xs">
+                       <i data-lucide="arrow-left" class="mr-1 w-4 h-4"></i> Volver
+                    </button>
+                    <button onclick="exportCalendarioCompletoPDF()" class="flex items-center text-[#3e342f] font-bold text-xs border border-[#decbb7] px-3 py-1.5 rounded-xl bg-white shadow-sm hover:bg-[#fef9c3] active:scale-95 transition-all">
+                       <i data-lucide="download" class="mr-1 w-3.5 h-3.5 text-[#c25438]"></i> Exportar PDF
+                    </button>
+                </div>
+                <h2 class="text-xl font-black text-[#3e342f] flex items-center gap-2 uppercase tracking-tighter leading-tight mb-1">
+                    <i data-lucide="calendar" class="text-[#c25438] w-5 h-5"></i> HORARIOS DE PARTIDOS <br><span class="text-sm font-bold text-gray-500">(Aproximados)</span>
+                </h2>
+                <p class="text-[11px] text-[#c25438] font-bold mt-1">Se requiere la presencia con 30 min de antelación.</p>
+            </div>
+
+            <div id="horarios-content" class="p-4 pb-12 w-full">
+                <!-- PÁGINA 1: FASE LIGA -->
+                <div class="pdf-page w-full">
+                    <div class="hidden pdf-header text-center mb-6">
+                        <h2 class="font-black text-[#c25438] text-xl uppercase tracking-widest">Calendario - Fase Liga</h2>
+                        <p class="text-[10px] text-[#3e342f] font-bold">Se requiere presencia 30 min de antelación</p>
+                    </div>
+
+                    <div class="space-y-6 w-full">
+                        <!-- Viernes 19:30 -->
+                        <div>
+                            <h3 class="text-sm font-black text-[#c25438] uppercase tracking-wider border-b-2 border-[#decbb7] pb-1 mb-3">Viernes 19:30 - Fase Grupos Femenino</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">19:30</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F2</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">19:30</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F4</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F3</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sábado 10:00 -->
+                        <div>
+                            <h3 class="text-sm font-black text-[#c25438] uppercase tracking-wider border-b-2 border-[#decbb7] pb-1 mb-3">Sábado 10:00 - Grupos Masc. A y Fem.</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">10:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A2</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">10:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A4</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A3</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">11:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">11:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="f2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="f3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja F3</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">12:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">12:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="a2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="a3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja A3</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sábado 18:00 -->
+                        <div>
+                            <h3 class="text-sm font-black text-[#c25438] uppercase tracking-wider border-b-2 border-[#decbb7] pb-1 mb-3">Sábado 18:00 - Grupos Masc. B</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">18:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B2</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 px-1 rounded mt-0.5 text-center leading-tight">18:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B4</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B3</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">20:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B3</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B1</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3]/50 border border-yellow-200 px-1 rounded mt-0.5 text-center leading-tight">20:00</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B5</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b4" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b1" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b5" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B5</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-[#c25438] bg-[#fef9c3] border border-[#fde047] px-1 rounded mt-0.5 text-center leading-tight">A cont</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span data-team="b2" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B2</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span data-team="b3" class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Pareja B3</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PÁGINA 2: ELIMINATORIAS -->
+                <div class="page-break pdf-page w-full mt-8">
+                    <div class="hidden pdf-header text-center mb-6">
+                        <h2 class="font-black text-[#c25438] text-xl uppercase tracking-widest">Calendario - Eliminatorias</h2>
+                        <p class="text-[10px] text-[#3e342f] font-bold">Se requiere presencia 30 min de antelación</p>
+                    </div>
+
+                    <div class="space-y-6 w-full">
+                        <!-- Previo Femenino -->
+                        <div>
+                            <h3 class="text-sm font-black text-[#c25438] uppercase tracking-wider border-b-2 border-[#decbb7] pb-1 mb-3">Previo Femenino (Sábado 19:30)</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-red-50/50 rounded-lg border border-red-200 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-red-100 pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-red-600 bg-red-100 px-1 rounded mt-0.5 text-center leading-tight">19:30</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">4to Clasif.</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">5to Clasif.</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Domingo 10:00 -->
+                        <div>
+                            <h3 class="text-sm font-black text-[#c25438] uppercase tracking-wider border-b-2 border-[#decbb7] pb-1 mb-3">Domingo 10:00 - Semifinales Femenino</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 border border-gray-200 px-1 rounded mt-0.5 text-center leading-tight">SfF-1</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">1er Clasif.</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora Previa</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 border border-gray-200 px-1 rounded mt-0.5 text-center leading-tight">SfF-2</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">2do Clasif.</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">3er Clasif.</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-[#fef9c3]/30 rounded-lg border border-yellow-200 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-yellow-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 1</span><span class="text-[8px] font-bold text-yellow-700 bg-yellow-200 border border-yellow-400 px-1 rounded mt-0.5 text-center leading-tight">FINAL</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfF-1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfF-2</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-gray-50/50 rounded-lg border border-[#decbb7] shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-[#ebdcc9] pr-1.5">
+                                        <span class="text-[10px] font-black text-[#c25438]">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-200 border border-gray-300 px-1 rounded mt-0.5 text-center leading-tight">3º y 4º</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Perdedora SfF-1</span><span class="text-[8px] font-black text-[#c25438] my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Perdedora SfF-2</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Domingo 11:30 -->
+                        <div>
+                            <h3 class="text-sm font-black text-gray-600 uppercase tracking-wider border-b-2 border-gray-300 pb-1 mb-3">Domingo 11:30 - Semifinales Plata</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-gray-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-gray-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-gray-600">PISTA 1</span><span class="text-[8px] font-bold text-gray-600 bg-gray-200 border border-gray-300 px-1 rounded mt-0.5 text-center leading-tight">SfM-3</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">3ro Grp-A</span><span class="text-[8px] font-black text-gray-400 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">4to Grp-B</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-gray-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-gray-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-gray-600">PISTA 2</span><span class="text-[8px] font-bold text-gray-600 bg-gray-200 border border-gray-300 px-1 rounded mt-0.5 text-center leading-tight">SfM-4</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">3ro Grp-B</span><span class="text-[8px] font-black text-gray-400 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">4to Grp-A</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-gray-50/50 rounded-lg border border-gray-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-gray-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-gray-600">PISTA 1</span><span class="text-[8px] font-bold text-gray-800 bg-gray-300 border border-gray-400 px-1 rounded mt-0.5 text-center leading-tight">FINAL</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfM-3</span><span class="text-[8px] font-black text-gray-400 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfM-4</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-gray-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-gray-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-gray-600">PISTA 2</span><span class="text-[8px] font-bold text-gray-500 bg-gray-100 border border-gray-200 px-1 rounded mt-0.5 text-center leading-tight">Farolillo</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">5to Grp-A</span><span class="text-[8px] font-black text-gray-400 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">5to Grp-B</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Domingo 18:00 -->
+                        <div class="bg-gradient-to-br from-white to-yellow-50 p-3 rounded-xl border border-yellow-300 shadow-sm">
+                            <h3 class="text-sm font-black text-yellow-700 uppercase tracking-wider border-b-2 border-yellow-300 pb-1 mb-3">Domingo 18:00 - Semifinales Oro</h3>
+                            <div class="grid-matches grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-yellow-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-yellow-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-yellow-600">PISTA 1</span><span class="text-[8px] font-bold text-yellow-800 bg-yellow-200 border border-yellow-400 px-1 rounded mt-0.5 text-center leading-tight">SfM-1</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">1ro Grp-A</span><span class="text-[8px] font-black text-yellow-600 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">2do Grp-B</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-yellow-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-yellow-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-yellow-600">PISTA 2</span><span class="text-[8px] font-bold text-yellow-800 bg-yellow-200 border border-yellow-400 px-1 rounded mt-0.5 text-center leading-tight">SfM-2</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">1ro Grp-B</span><span class="text-[8px] font-black text-yellow-600 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">2do Grp-A</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-yellow-300/30 rounded-lg border-2 border-yellow-400 shadow-md w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-yellow-300 pr-1.5">
+                                        <span class="text-[10px] font-black text-yellow-700">PISTA 1</span><span class="text-[8px] font-bold text-white bg-yellow-600 border border-yellow-700 px-1 rounded mt-0.5 text-center leading-tight">FINAL</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfM-1</span><span class="text-[8px] font-black text-yellow-600 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Ganadora SfM-2</span></div>
+                                </div>
+                                <div class="match-card flex items-center justify-between p-2 bg-white rounded-lg border border-gray-300 shadow-sm w-full">
+                                    <div class="flex flex-col items-center justify-center w-[52px] shrink-0 border-r border-gray-200 pr-1.5">
+                                        <span class="text-[10px] font-black text-gray-500">PISTA 2</span><span class="text-[8px] font-bold text-gray-600 bg-gray-200 border border-gray-300 px-1 rounded mt-0.5 text-center leading-tight">3º y 4º</span>
+                                    </div>
+                                    <div class="flex-1 flex flex-col items-center px-1.5 min-w-0"><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Perdedora SfM-1</span><span class="text-[8px] font-black text-gray-400 my-[3px]">Vs</span><span class="font-bold text-[11px] text-[#3e342f] text-center w-full whitespace-normal leading-tight">Perdedora SfM-2</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VISTA DE CONTACTO ================= -->
+        <div id="view-info" class="flex-1 hidden animate-fade overflow-y-auto bg-[#f5f0e6]">
+            <div class="p-6 pt-10 pb-4 sticky top-0 z-10 bg-[#f5f0e6]">
+                <button onclick="showView('main')" class="mb-2 flex items-center text-[#c25438] font-bold text-xs">
+                    <i data-lucide="arrow-left" class="mr-1.5 w-4 h-4"></i> Volver
+                </button>
+            </div>
+            
+            <div class="px-6 pb-12 flex-1 flex flex-col items-center">
+                <h2 class="text-xl font-black text-[#3e342f] mb-4 uppercase tracking-widest text-center leading-tight">
+                    Contacto
+                </h2>
+                
+                <div class="w-full bg-white rounded-[2rem] shadow-sm border border-[#decbb7] p-6 text-center space-y-6">
+                    <div class="flex flex-col items-center border-b border-[#ebdcc9]/40 pb-4">
+                        <h3 class="text-2xl font-black text-[#3e342f] uppercase tracking-tighter">David</h3>
+                        <div class="flex items-center gap-1.5 mt-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100 shadow-sm">
+                            <i data-lucide="phone-off" class="w-3.5 h-3.5"></i>
+                            <span class="text-[9px] font-black uppercase tracking-wider">No llamadas / Solo mensajes</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-left">
+                        <a href="https://wa.me/34679984097" target="_blank" class="flex items-center gap-4 p-3.5 bg-[#e8faf0] hover:bg-[#d4f5e2] rounded-xl border border-[#b2ecd3] transition-all group active:scale-[0.98]">
+                            <div class="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shrink-0 shadow-sm text-lg">
+                                📱
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[9px] text-[#2c754d] font-black uppercase tracking-wider">Enviar mensaje</span>
+                                <span class="text-[13px] font-bold text-[#3e342f] break-all group-hover:underline">WhatsApp: 679 984 098</span>
+                            </div>
+                        </a>
+
+                        <a href="mailto:davidarrmar@gmail.com" class="flex items-center gap-4 p-3.5 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-100 transition-all group active:scale-[0.98]">
+                            <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-sm text-lg">
+                                📧
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[9px] text-blue-600 font-black uppercase tracking-wider">Escribir un correo</span>
+                                <span class="text-[13px] font-bold text-[#3e342f] break-all group-hover:underline">davidarrmar@gmail.com</span>
+                            </div>
+                        </a>
+
+                        <a href="https://darma-sport.github.io/Padel-Fresno/" target="_blank" class="flex items-center gap-4 p-3.5 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-100 transition-all group active:scale-[0.98]">
+                            <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm text-lg">
+                                🌐
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[9px] text-amber-700 font-black uppercase tracking-wider">Sitio Web Oficial</span>
+                                <span class="text-[13px] font-bold text-[#3e342f] break-all group-hover:underline">www.darma-sport</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Controles de Administración flotantes -->
+    <button id="admin-toggle" class="fixed bottom-4 right-4 bg-gray-800 text-white p-3 rounded-full shadow-xl opacity-50 hover:opacity-100 transition-opacity z-50">
+        <i data-lucide="lock" class="w-5 h-5"></i>
+    </button>
+    
+    <div id="admin-panel" class="fixed bottom-16 right-4 bg-white p-4 rounded-xl shadow-2xl border-2 border-gray-800 z-50 hidden flex-col gap-2 max-w-[200px]">
+        <p class="font-bold text-xs text-center mb-1">Modo Edición</p>
+        <button onclick="saveAdminData()" class="bg-green-600 text-white px-3 py-1.5 rounded font-bold text-xs hover:bg-green-700 w-full">Guardar Local</button>
+        <button onclick="openExport()" class="bg-blue-600 text-white px-3 py-1.5 rounded font-bold text-xs hover:bg-blue-700 w-full">Exportar Datos</button>
+        <button onclick="openImport()" class="bg-gray-600 text-white px-3 py-1.5 rounded font-bold text-xs hover:bg-gray-700 w-full">Importar Datos</button>
+        <button onclick="forceToggleAdmin()" class="text-red-600 text-[10px] mt-1 underline text-center">Salir Admin</button>
+    </div>
+
+    <!-- Modal para Importar/Exportar -->
+    <div id="data-modal" class="fixed inset-0 bg-black/60 z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md flex flex-col gap-4">
+            <h3 id="data-modal-title" class="text-lg font-black text-[#3e342f]">Datos</h3>
+            <p class="text-xs text-gray-600" id="data-modal-desc">Copia o pega el código abajo.</p>
+            <textarea id="data-modal-text" class="w-full h-40 border-2 border-[#decbb7] rounded-lg p-2 font-mono text-[10px] bg-gray-50 focus:outline-none focus:border-[#c25438]"></textarea>
+            <div class="flex gap-2 justify-end mt-2">
+                <button onclick="closeDataModal()" class="px-3 py-1.5 bg-gray-200 rounded font-bold text-xs hover:bg-gray-300">Cerrar</button>
+                <button id="data-modal-action" class="px-3 py-1.5 bg-[#c25438] text-white rounded font-bold text-xs hover:bg-red-700">Acción</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog Modal -->
+    <div id="custom-dialog" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm flex flex-col gap-4 text-center transform transition-all scale-95 opacity-0" id="custom-dialog-box">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-[#fef9c3] mb-2">
+                <i data-lucide="info" class="h-6 w-6 text-[#c25438]" id="custom-dialog-icon"></i>
+            </div>
+            <h3 id="custom-dialog-title" class="text-lg font-black text-[#3e342f] leading-6"></h3>
+            <p id="custom-dialog-msg" class="text-sm text-gray-600"></p>
+            <input type="password" id="custom-dialog-input" class="hidden mt-2 border-2 border-[#decbb7] rounded-lg p-2 text-center text-sm focus:outline-none focus:border-[#c25438]" placeholder="Escribe aquí..." />
+            
+            <div class="flex gap-3 justify-center mt-4">
+                <button id="custom-dialog-cancel" class="hidden px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-200 transition-colors">Cancelar</button>
+                <button id="custom-dialog-ok" class="px-5 py-2.5 bg-[#c25438] text-white rounded-xl font-bold text-xs hover:bg-red-700 shadow-sm transition-colors">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let dialogCallback = null;
+
+        function showDialog(options) {
+            const dialog = document.getElementById('custom-dialog');
+            const box = document.getElementById('custom-dialog-box');
+            const title = document.getElementById('custom-dialog-title');
+            const msg = document.getElementById('custom-dialog-msg');
+            const input = document.getElementById('custom-dialog-input');
+            const btnCancel = document.getElementById('custom-dialog-cancel');
+            const btnOk = document.getElementById('custom-dialog-ok');
+            const icon = document.getElementById('custom-dialog-icon');
+
+            title.innerText = options.title || 'Mensaje';
+            msg.innerText = options.message || '';
+            
+            if (options.icon === 'lock') {
+                icon.setAttribute('data-lucide', 'lock');
+                icon.classList.remove('text-[#c25438]'); icon.classList.add('text-gray-800');
+                icon.parentElement.classList.replace('bg-[#fef9c3]', 'bg-gray-100');
+            } else if (options.icon === 'success') {
+                icon.setAttribute('data-lucide', 'check-circle');
+                icon.classList.remove('text-[#c25438]'); icon.classList.add('text-green-600');
+                icon.parentElement.classList.replace('bg-[#fef9c3]', 'bg-green-100');
+            } else {
+                icon.setAttribute('data-lucide', 'info');
+                icon.classList.add('text-[#c25438]'); icon.classList.remove('text-green-600', 'text-gray-800');
+                icon.parentElement.classList.add('bg-[#fef9c3]'); icon.parentElement.classList.remove('bg-green-100', 'bg-gray-100');
+            }
+            lucide.createIcons();
+
+            if (options.isPrompt) {
+                input.classList.remove('hidden');
+                input.value = '';
+                btnCancel.classList.remove('hidden');
+            } else {
+                input.classList.add('hidden');
+                btnCancel.classList.add('hidden');
+            }
+
+            dialogCallback = options.callback || null;
+
+            dialog.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+                if (options.isPrompt) input.focus();
+            }, 10);
+
+            btnOk.onclick = () => {
+                closeDialog();
+                if (dialogCallback) dialogCallback(options.isPrompt ? input.value : true);
+            };
+
+            btnCancel.onclick = () => {
+                closeDialog();
+                if (dialogCallback) dialogCallback(null);
+            };
+        }
+
+        function closeDialog() {
+            const dialog = document.getElementById('custom-dialog');
+            const box = document.getElementById('custom-dialog-box');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => dialog.classList.add('hidden'), 200);
+        }
+
+        const datosCruces = {
+            5: [
+                { fase: "Previo", bg: "bg-[#fef9c3]/30", textColor: "text-[#c25438]", items: ["4ta Clasif. vs 5ta Clasif."] },
+                { fase: "Semifinales", bg: "bg-[#fef9c3]/60", textColor: "text-[#c25438]", items: ["1ra Clasif. vs Ganadora Previa (Sf-1)", "2da Clasif. vs 3ra Clasif. (Sf-2)"] },
+                { fase: "Finales", bg: "bg-[#fef9c3]/90", textColor: "text-[#c25438]", items: ["Perdedora Sf-1 vs Perdedora Sf-2 (3º y 4º)", "Ganadora Sf-1 vs Ganadora Sf-2 (FINAL)"] }
+            ],
+            8: [
+                { fase: "Semifinales Plata", bg: "bg-[#fef9c3]/30", textColor: "text-[#c25438]", items: ["3º Grp-A vs 4º Grp-B", "3º Grp-B vs 4º Grp-A"] },
+                { fase: "Finales Plata", bg: "bg-[#fef9c3]/50", textColor: "text-[#c25438]", items: ["Perdedoras Semis (7º y 8º)", "Ganadoras Semis (5º y 6º)"] },
+                { fase: "Semifinales Élite", bg: "bg-[#fef9c3]/70", textColor: "text-[#c25438]", items: ["1º Grp-A vs 2º Grp-B", "1º Grp-B vs 2º Grp-A"] },
+                { fase: "Finales Élite", bg: "bg-[#fef9c3]/90", textColor: "text-[#c25438]", items: ["Perdedoras Semis (3º y 4º)", "Ganadoras Semis (CAMPEÓN)"] }
+            ],
+            10: [
+                { fase: "Semifinales Plata", bg: "bg-[#fef9c3]/30", textColor: "text-[#c25438]", items: ["3º Grp-A vs 4º Grp-B", "3º Grp-B vs 4º Grp-A"] },
+                { fase: "Finales Plata", bg: "bg-[#fef9c3]/50", textColor: "text-[#c25438]", items: ["Ganadora Sf-3 vs Ganadora Sf-4", "Partido Farolillo (5º Grp-A vs 5º Grp-B)"] },
+                { fase: "Semifinales Élite", bg: "bg-[#fef9c3]/70", textColor: "text-[#c25438]", items: ["1º Grp-A vs 2º Grp-B", "1º Grp-B vs 2º Grp-A"] },
+                { fase: "Finales Élite", bg: "bg-[#fef9c3]/90", textColor: "text-[#c25438]", items: ["Perdedoras Semis (3º y 4º)", "Ganadoras Semis (CAMPEÓN)"] }
+            ],
+            12: [
+                { fase: "Previa Oro", bg: "bg-[#fef9c3]/30", textColor: "text-[#c25438]", items: ["2ºA vs 3ºB (Pr-1)", "2ºB vs 3ºA (Pr-2)", "2ºC vs 3ºD (Pr-3)", "2ºD vs 3ºC (Pr-4)"] }
+            ],
+            16: [
+                { fase: "Cuartos Plata", bg: "bg-[#fef9c3]/30", textColor: "text-[#c25438]", items: ["3ºA vs 4ºC", "3ºB vs 4ºD", "3ºC vs 4ºA", "3ºD vs 4ºB"] }
+            ]
+        };
+
+        function showCruces(num) {
+            document.querySelectorAll('#view-sistemas button[id^="btn-cruce"]').forEach(btn => {
+                btn.classList.remove('tab-active');
+                btn.style.backgroundColor = '#f5f0e6';
+                btn.style.color = '#3e342f';
+            });
+            const activeBtn = document.getElementById(`btn-cruce-${num}`);
+            if(activeBtn) {
+                activeBtn.classList.add('tab-active');
+                activeBtn.style.backgroundColor = '#c25438';
+                activeBtn.style.color = '#fefbc8';
+            }
+
+            const data = datosCruces[num] || [];
+            const container = document.getElementById('contenedor-cruces');
+            container.innerHTML = data.map(fase => `
+                <div class="rounded-2xl p-3 border border-[#decbb7] shadow-sm ${fase.bg}">
+                    <h4 class="font-black text-[10px] uppercase tracking-widest mb-2 ${fase.textColor}">${fase.fase}</h4>
+                    <div class="space-y-1.5">
+                        ${fase.items.map(item => `
+                            <div class="bg-white/95 p-2 rounded-lg text-[10px] font-bold text-[#3e342f] shadow-sm border border-[#decbb7]">
+                                ${item}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showView(viewId) {
+            const views = ['main', 'bases', 'sistemas', 'horarios', 'info', 't5', 't10'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if(el) el.classList.add('hidden');
+            });
+            
+            const target = document.getElementById(`view-${viewId}`);
+            if (target) {
+                target.classList.remove('hidden');
+                target.scrollTop = 0;
+            }
+
+            if (viewId === 'sistemas') showCruces(5);
+            if (['t5', 't10', 'horarios'].includes(viewId)) renderAll();
+        }
+
+        function switchTab(tournament, tab) {
+            document.getElementById(`${tournament}-liga`).classList.add('hidden');
+            document.getElementById(`${tournament}-elim`).classList.add('hidden');
+            document.getElementById(`${tournament}-${tab}`).classList.remove('hidden');
+            
+            const btnLiga = document.getElementById(`btn-${tournament}-liga`);
+            const btnElim = document.getElementById(`btn-${tournament}-elim`);
+            
+            const activeClass = 'flex-1 py-2 font-black rounded-t-lg tab-active text-[10px] uppercase transition-colors tracking-wider';
+            const inactiveClass = 'flex-1 py-2 font-black rounded-t-lg tab-inactive text-[10px] uppercase transition-colors tracking-wider';
+            
+            if(tab === 'liga') {
+                btnLiga.className = activeClass; btnElim.className = inactiveClass;
+            } else {
+                btnLiga.className = inactiveClass; btnElim.className = activeClass;
+            }
+        }
+
+        const INITIAL_DATA = null; 
+        
+        const DEFAULT_STATE = {
+            "t5": {
+                "teams": [
+                    {"id":"f1","name":"Pareja F1"},
+                    {"id":"f2","name":"Pareja F2"},
+                    {"id":"f3","name":"Pareja F3"},
+                    {"id":"f4","name":"Pareja F4"},
+                    {"id":"f5","name":"Pareja F5"}
+                ],
+                "matches": [
+                    {"id":"m1","t1":"f1","t2":"f2","s1":null,"s2":null},
+                    {"id":"m2","t1":"f1","t2":"f3","s1":null,"s2":null},
+                    {"id":"m3","t1":"f1","t2":"f4","s1":null,"s2":null},
+                    {"id":"m4","t1":"f1","t2":"f5","s1":null,"s2":null},
+                    {"id":"m5","t1":"f2","t2":"f3","s1":null,"s2":null},
+                    {"id":"m6","t1":"f2","t2":"f4","s1":null,"s2":null},
+                    {"id":"m7","t1":"f2","t2":"f5","s1":null,"s2":null},
+                    {"id":"m8","t1":"f3","t2":"f4","s1":null,"s2":null},
+                    {"id":"m9","t1":"f3","t2":"f5","s1":null,"s2":null},
+                    {"id":"m10","t1":"f4","t2":"f5","s1":null,"s2":null}
+                ],
+                "playoffs": {
+                    "previo": {"s1":null,"s2":null},
+                    "sf1": {"s1":null,"s2":null},
+                    "sf2": {"s1":null,"s2":null},
+                    "final": {"s1":null,"s2":null},
+                    "third": {"s1":null,"s2":null}
+                }
+            },
+            "t10": {
+                "teamsA":[{"id":"a1","name":"Pareja A1"},{"id":"a2","name":"Pareja A2"},{"id":"a3","name":"Pareja A3"},{"id":"a4","name":"Pareja A4"},{"id":"a5","name":"Pareja A5"}],
+                "teamsB":[{"id":"b1","name":"Pareja B1"},{"id":"b2","name":"Pareja B2"},{"id":"b3","name":"Pareja B3"},{"id":"b4","name":"Pareja B4"},{"id":"b5","name":"Pareja B5"}],
+                "matchesA":[{"id":"ma1","t1":"a1","t2":"a2","s1":null,"s2":null},{"id":"ma2","t1":"a1","t2":"a3","s1":null,"s2":null},{"id":"ma3","t1":"a1","t2":"a4","s1":null,"s2":null},{"id":"ma4","t1":"a1","t2":"a5","s1":null,"s2":null},{"id":"ma5","t1":"a2","t2":"a3","s1":null,"s2":null},{"id":"ma6","t1":"a2","t2":"a4","s1":null,"s2":null},{"id":"ma7","t1":"a2","t2":"a5","s1":null,"s2":null},{"id":"ma8","t1":"a3","t2":"a4","s1":null,"s2":null},{"id":"ma9","t1":"a3","t2":"a5","s1":null,"s2":null},{"id":"ma10","t1":"a4","t2":"a5","s1":null,"s2":null}],
+                "matchesB":[{"id":"mb1","t1":"b1","t2":"b2","s1":null,"s2":null},{"id":"mb2","t1":"b1","t2":"b3","s1":null,"s2":null},{"id":"mb3","t1":"b1","t2":"b4","s1":null,"s2":null},{"id":"mb4","t1":"b1","t2":"b5","s1":null,"s2":null},{"id":"mb5","t1":"b2","t2":"b3","s1":null,"s2":null},{"id":"mb6","t1":"b2","t2":"b4","s1":null,"s2":null},{"id":"mb7","t1":"b2","t2":"b5","s1":null,"s2":null},{"id":"mb8","t1":"b3","t2":"b4","s1":null,"s2":null},{"id":"mb9","t1":"b3","t2":"b5","s1":null,"s2":null},{"id":"mb10","t1":"b4","t2":"b5","s1":null,"s2":null}],
+                "playoffsOro":{"sf1":{"s1":null,"s2":null},"sf2":{"s1":null,"s2":null},"final":{"s1":null,"s2":null},"third":{"s1":null,"s2":null}},
+                "playoffsPlata":{"sf3":{"s1":null,"s2":null},"sf4":{"s1":null,"s2":null},"finalPlata":{"s1":null,"s2":null},"farolillo":{"s1":null,"s2":null}}
+            }
+        };
+
+        let appState;
+        try {
+            if (INITIAL_DATA) {
+                appState = typeof INITIAL_DATA === 'string' ? JSON.parse(INITIAL_DATA) : INITIAL_DATA;
+            } else {
+                let local = localStorage.getItem('padelTournamentState');
+                appState = local ? JSON.parse(local) : JSON.parse(JSON.stringify(DEFAULT_STATE));
+                
+                if(!appState.t5) {
+                    appState.t5 = JSON.parse(JSON.stringify(DEFAULT_STATE.t5));
+                }
+            }
+        } catch(e) {
+            appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        }
+
+        let isAdmin = false;
+
+        function calculateStandings(teams, matches) {
+            let table = teams.map(t => ({ id: t.id, name: t.name, pts: 0, j: 0, jf: 0, jc: 0, df: 0 }));
+            
+            matches.forEach(m => {
+                if (m.s1 !== null && m.s2 !== null && m.s1 !== "" && m.s2 !== "") {
+                    let s1 = parseInt(m.s1), s2 = parseInt(m.s2);
+                    let t1 = table.find(x => x.id === m.t1);
+                    let t2 = table.find(x => x.id === m.t2);
+                    
+                    t1.j++; t2.j++;
+                    t1.jf += s1; t1.jc += s2; t1.df = t1.jf - t1.jc;
+                    t2.jf += s2; t2.jc += s1; t2.df = t2.jf - t2.jc;
+                    
+                    if (s1 > s2) t1.pts += 1; 
+                    else if (s2 > s1) t2.pts += 1;
+                }
+            });
+
+            table.sort((a, b) => {
+                if (a.pts !== b.pts) return b.pts - a.pts;
+                let h2hMatch = matches.find(m => (m.t1 === a.id && m.t2 === b.id) || (m.t1 === b.id && m.t2 === a.id));
+                if (h2hMatch && h2hMatch.s1 !== null && h2hMatch.s2 !== null) {
+                    let aScore = h2hMatch.t1 === a.id ? parseInt(h2hMatch.s1) : parseInt(h2hMatch.s2);
+                    let bScore = h2hMatch.t1 === b.id ? parseInt(h2hMatch.s1) : parseInt(h2hMatch.s2);
+                    if (aScore !== bScore) return bScore - aScore;
+                }
+                if (a.df !== b.df) return b.df - a.df;
+                return b.jf - a.jf;
+            });
+
+            return table;
+        }
+
+        function getTeamName(teamsObj, tId, fallback) {
+            if (!tId) return fallback;
+            let list = Array.isArray(teamsObj) ? teamsObj : (teamsObj.teamsA || []).concat(teamsObj.teamsB || []);
+            let t = list.find(x => x.id === tId);
+            return t ? t.name : fallback;
+        }
+
+        // ====== FUNCIÓN PARA SINCRONIZAR CALENDARIO =======
+        function updateScheduleNames() {
+            if (!appState) return;
+            const getTeam = (id) => {
+                if (id.startsWith('f')) return getTeamName(appState.t5.teams, id, `Pareja F${id.replace('f','')}`);
+                if (id.startsWith('a')) return getTeamName(appState.t10.teamsA, id, `Pareja A${id.replace('a','')}`);
+                if (id.startsWith('b')) return getTeamName(appState.t10.teamsB, id, `Pareja B${id.replace('b','')}`);
+                return id;
+            };
+
+            document.querySelectorAll('#view-horarios [data-team]').forEach(el => {
+                const teamId = el.getAttribute('data-team');
+                const name = getTeam(teamId);
+                el.innerText = name;
+                el.title = name;
+            });
+        }
+
+        function renderAll() {
+            resolveT5(); 
+            resolveT10(); 
+            updateScheduleNames();
+        }
+
+        function createLeagueTable(standings, containerId, prefix) {
+            let html = `
+            <tr>
+                <th class="col-p">P</th>
+                <th class="col-pareja">Pareja</th>
+                <th class="col-ptos">Ptos</th>
+                <th class="col-narrow">J</th>
+                <th class="col-narrow">JF</th>
+                <th class="col-narrow">JC</th>
+                <th class="col-narrow">DF</th>
+            </tr>`;
+            standings.forEach((t, i) => {
+                let nameHtml = isAdmin ? `<input type="text" class="edit-input" id="${prefix}_name_${t.id}" value="${t.name}">` : t.name;
+                html += `<tr>
+                    <td class="font-bold text-[10px] col-p">${i+1}</td>
+                    <td class="col-pareja font-semibold text-[10px] break-words">${nameHtml}</td>
+                    <td class="font-bold text-[#c25438] text-[10px] col-ptos">${t.pts}</td>
+                    <td class="text-[10px] col-narrow">${t.j}</td>
+                    <td class="text-[10px] col-narrow">${t.jf}</td>
+                    <td class="text-[10px] col-narrow">${t.jc}</td>
+                    <td class="text-[10px] col-narrow font-bold">${t.df}</td>
+                </tr>`;
+            });
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        function createMatchList(matches, teamsObj, containerId, prefix) {
+            let html = '';
+            matches.forEach(m => {
+                let n1 = getTeamName(teamsObj, m.t1, m.t1);
+                let n2 = getTeamName(teamsObj, m.t2, m.t2);
+                let s1 = m.s1 !== null ? m.s1 : '-';
+                let s2 = m.s2 !== null ? m.s2 : '-';
+                
+                if (isAdmin) {
+                    s1 = `<input type="number" id="${prefix}_m_${m.id}_s1" value="${m.s1 !== null ? m.s1 : ''}" class="edit-score" min="0">`;
+                    s2 = `<input type="number" id="${prefix}_m_${m.id}_s2" value="${m.s2 !== null ? m.s2 : ''}" class="edit-score" min="0">`;
+                }
+                
+                html += `
+                <div class="match-box">
+                    <span class="team-name text-right pr-2 truncate max-w-[40%]">${n1}</span>
+                    <div class="flex items-center gap-1 font-black bg-[#ebdcc9] p-1 rounded">
+                        <div class="w-6 text-center">${s1}</div><span class="text-[8px] text-gray-500">vs</span><div class="w-6 text-center">${s2}</div>
+                    </div>
+                    <span class="team-name text-left pl-2 truncate max-w-[40%]">${n2}</span>
+                </div>`;
+            });
+            document.getElementById(containerId).innerHTML = html;
+        }
+
+        function renderBracketMatch(title, p1Name, p2Name, mObj, pathId) {
+            let s1 = mObj.s1 !== null ? mObj.s1 : '-';
+            let s2 = mObj.s2 !== null ? mObj.s2 : '-';
+            let p1Win = mObj.s1 !== null && mObj.s2 !== null && parseInt(mObj.s1) > parseInt(mObj.s2);
+            let p2Win = mObj.s1 !== null && mObj.s2 !== null && parseInt(mObj.s2) > parseInt(mObj.s1);
+
+            if (isAdmin) {
+                s1 = `<input type="number" id="${pathId}_s1" value="${mObj.s1!==null?mObj.s1:''}" class="w-8 border text-center p-0 text-xs rounded">`;
+                s2 = `<input type="number" id="${pathId}_s2" value="${mObj.s2!==null?mObj.s2:''}" class="w-8 border text-center p-0 text-xs rounded">`;
+            }
+
+            return `
+            <div class="bracket-match">
+                <div class="bracket-title">${title}</div>
+                <div class="bracket-team ${p1Win ? 'winner' : ''}">
+                    <span class="truncate pr-1 w-full" title="${p1Name}">${p1Name}</span>
+                    <span class="bracket-score">${s1}</span>
+                </div>
+                <div class="bracket-team ${p2Win ? 'winner' : ''}">
+                    <span class="truncate pr-1 w-full" title="${p2Name}">${p2Name}</span>
+                    <span class="bracket-score">${s2}</span>
+                </div>
+            </div>`;
+        }
+
+        function resolveT5() {
+            let st = calculateStandings(appState.t5.teams, appState.t5.matches);
+            createLeagueTable(st, 't5-table', 't5');
+            createMatchList(appState.t5.matches, appState.t5.teams, 't5-matches', 't5');
+
+            let po = appState.t5.playoffs;
+            let groupDone = appState.t5.matches.every(m => m.s1 !== null && m.s2 !== null);
+            
+            let prev_1 = groupDone ? st[3].name : "4ta Clasif.";
+            let prev_2 = groupDone ? st[4].name : "5ta Clasif.";
+
+            let sf1_1 = groupDone ? st[0].name : "1ra Clasif.";
+            let sf1_2 = (po.previo.s1 !== null) ? (parseInt(po.previo.s1) > parseInt(po.previo.s2) ? prev_1 : prev_2) : "Ganadora Previa";
+            
+            let sf2_1 = groupDone ? st[1].name : "2da Clasif.";
+            let sf2_2 = groupDone ? st[2].name : "3ra Clasif.";
+
+            let f_1 = (po.sf1.s1 !== null) ? (parseInt(po.sf1.s1) > parseInt(po.sf1.s2) ? sf1_1 : sf1_2) : "Ganadora Sf-1";
+            let f_2 = (po.sf2.s1 !== null) ? (parseInt(po.sf2.s1) > parseInt(po.sf2.s2) ? sf2_1 : sf2_2) : "Ganadora Sf-2";
+            
+            let t_1 = (po.sf1.s1 !== null) ? (parseInt(po.sf1.s1) < parseInt(po.sf1.s2) ? sf1_1 : sf1_2) : "Perdedora Sf-1";
+            let t_2 = (po.sf2.s1 !== null) ? (parseInt(po.sf2.s1) < parseInt(po.sf2.s2) ? sf2_1 : sf2_2) : "Perdedora Sf-2";
+
+            document.getElementById('t5-bracket').innerHTML = `
+                <div class="bracket-col gap-6 justify-center">
+                    ${renderBracketMatch('PARTIDO PREVIO', prev_1, prev_2, po.previo, 't5_playoffs_previo')}
+                </div>
+                <div class="bracket-col gap-6">
+                    ${renderBracketMatch('Sf-1', sf1_1, sf1_2, po.sf1, 't5_playoffs_sf1')}
+                    ${renderBracketMatch('Sf-2', sf2_1, sf2_2, po.sf2, 't5_playoffs_sf2')}
+                </div>
+                <div class="bracket-col gap-4 justify-center">
+                    ${renderBracketMatch('FINAL', f_1, f_2, po.final, 't5_playoffs_final')}
+                    ${renderBracketMatch('3º Y 4º PUESTO', t_1, t_2, po.third, 't5_playoffs_third')}
+                </div>
+            `;
+        }
+
+        function resolveT10() {
+            let stA = calculateStandings(appState.t10.teamsA, appState.t10.matchesA);
+            let stB = calculateStandings(appState.t10.teamsB, appState.t10.matchesB);
+            
+            createLeagueTable(stA, 't10a-table', 't10a');
+            createMatchList(appState.t10.matchesA, appState.t10.teamsA, 't10a-matches', 't10a');
+            createLeagueTable(stB, 't10b-table', 't10b');
+            createMatchList(appState.t10.matchesB, appState.t10.teamsB, 't10b-matches', 't10b');
+
+            let poO = appState.t10.playoffsOro;
+            let poP = appState.t10.playoffsPlata;
+            let groupDone = appState.t10.matchesA.every(m => m.s1 !== null) && appState.t10.matchesB.every(m => m.s1 !== null);
+
+            let o_sf1_1 = groupDone ? stA[0].name : "1º Grp-A";
+            let o_sf1_2 = groupDone ? stB[1].name : "2º Grp-B";
+            let o_sf2_1 = groupDone ? stB[0].name : "1º Grp-B";
+            let o_sf2_2 = groupDone ? stA[1].name : "2º Grp-A";
+            
+            let of_1 = (poO.sf1.s1 !== null) ? (parseInt(poO.sf1.s1) > parseInt(poO.sf1.s2) ? o_sf1_1 : o_sf1_2) : "Ganadora Sf-1";
+            let of_2 = (poO.sf2.s1 !== null) ? (parseInt(poO.sf2.s1) > parseInt(poO.sf2.s2) ? o_sf2_1 : o_sf2_2) : "Ganadora Sf-2";
+            
+            let ot_1 = (poO.sf1.s1 !== null) ? (parseInt(poO.sf1.s1) < parseInt(poO.sf1.s2) ? o_sf1_1 : o_sf1_2) : "Perdedora Sf-1";
+            let ot_2 = (poO.sf2.s1 !== null) ? (parseInt(poO.sf2.s1) < parseInt(poO.sf2.s2) ? o_sf2_1 : o_sf2_2) : "Perdedora Sf-2";
+
+            document.getElementById('t10-bracket-oro').innerHTML = `
+                <div class="bracket-col gap-6">
+                    ${renderBracketMatch('Sf-1', o_sf1_1, o_sf1_2, poO.sf1, 't10_playoffsOro_sf1')}
+                    ${renderBracketMatch('Sf-2', o_sf2_1, o_sf2_2, poO.sf2, 't10_playoffsOro_sf2')}
+                </div>
+                <div class="bracket-col gap-4">
+                    ${renderBracketMatch('FINAL ORO', of_1, of_2, poO.final, 't10_playoffsOro_final')}
+                    ${renderBracketMatch('3º Y 4º PUESTO', ot_1, ot_2, poO.third, 't10_playoffsOro_third')}
+                </div>
+            `;
+
+            let p_sf3_1 = groupDone ? stA[2].name : "3º Grp-A";
+            let p_sf3_2 = groupDone ? stB[3].name : "4º Grp-B";
+            let p_sf4_1 = groupDone ? stB[2].name : "3º Grp-B";
+            let p_sf4_2 = groupDone ? stA[3].name : "4º Grp-A";
+
+            let pf_1 = (poP.sf3.s1 !== null) ? (parseInt(poP.sf3.s1) > parseInt(poP.sf3.s2) ? p_sf3_1 : p_sf3_2) : "Ganadora Sf-3";
+            let pf_2 = (poP.sf4.s1 !== null) ? (parseInt(poP.sf4.s1) > parseInt(poP.sf4.s2) ? p_sf4_1 : p_sf4_2) : "Ganadora Sf-4";
+            
+            let far_1 = groupDone ? stA[4].name : "5º Grp-A";
+            let far_2 = groupDone ? stB[4].name : "5º Grp-B";
+
+            document.getElementById('t10-bracket-plata').innerHTML = `
+                <div class="bracket-col gap-6">
+                    ${renderBracketMatch('Sf-3', p_sf3_1, p_sf3_2, poP.sf3, 't10_playoffsPlata_sf3')}
+                    ${renderBracketMatch('Sf-4', p_sf4_1, p_sf4_2, poP.sf4, 't10_playoffsPlata_sf4')}
+                </div>
+                <div class="bracket-col gap-4">
+                    ${renderBracketMatch('FINAL PLATA (5º y 6º)', pf_1, pf_2, poP.finalPlata, 't10_playoffsPlata_finalPlata')}
+                    ${renderBracketMatch('PART. FAROLILLO (9º y 10º)', far_1, far_2, poP.farolillo, 't10_playoffsPlata_farolillo')}
+                </div>
+            `;
+        }
+
+        document.getElementById('admin-toggle').addEventListener('click', () => {
+            if (!isAdmin) {
+                showDialog({
+                    title: 'Acceso Restringido',
+                    message: 'Introduce la contraseña de administrador:',
+                    isPrompt: true,
+                    icon: 'lock',
+                    callback: (val) => {
+                        if (val === 'Futbol1st@') { forceToggleAdmin(); } 
+                        else if (val !== null) { 
+                            showDialog({ title: 'Error', message: 'Contraseña incorrecta.', isPrompt: false }); 
+                        }
+                    }
+                });
+            } else {
+                forceToggleAdmin();
+            }
+        });
+
+        function forceToggleAdmin() {
+            isAdmin = !isAdmin;
+            document.getElementById('admin-toggle').classList.toggle('bg-green-600');
+            const panel = document.getElementById('admin-panel');
+            panel.classList.toggle('hidden');
+            panel.classList.toggle('flex');
+            renderAll();
+        }
+
+        function saveAdminData() {
+            ['t5'].forEach(t => {
+                appState[t].teams.forEach(tm => {
+                    let input = document.getElementById(`${t}_name_${tm.id}`);
+                    if(input) tm.name = input.value;
+                });
+                appState[t].matches.forEach(m => {
+                    let s1 = document.getElementById(`${t}_m_${m.id}_s1`);
+                    let s2 = document.getElementById(`${t}_m_${m.id}_s2`);
+                    if(s1 && s2) { m.s1 = s1.value===''?null:parseInt(s1.value); m.s2 = s2.value===''?null:parseInt(s2.value); }
+                });
+            });
+
+            ['a', 'b'].forEach(grp => {
+                appState.t10[`teams${grp.toUpperCase()}`].forEach(tm => {
+                    let input = document.getElementById(`t10${grp}_name_${tm.id}`);
+                    if(input) tm.name = input.value;
+                });
+                appState.t10[`matches${grp.toUpperCase()}`].forEach(m => {
+                    let s1 = document.getElementById(`t10${grp}_m_${m.id}_s1`);
+                    let s2 = document.getElementById(`t10${grp}_m_${m.id}_s2`);
+                    if(s1 && s2) { m.s1 = s1.value===''?null:parseInt(s1.value); m.s2 = s2.value===''?null:parseInt(s2.value); }
+                });
+            });
+
+            function savePlayoff(pathStr, poObj) {
+                Object.keys(poObj).forEach(k => {
+                    let s1 = document.getElementById(`${pathStr}_${k}_s1`);
+                    let s2 = document.getElementById(`${pathStr}_${k}_s2`);
+                    if(s1 && s2) { poObj[k].s1 = s1.value===''?null:parseInt(s1.value); poObj[k].s2 = s2.value===''?null:parseInt(s2.value); }
+                });
+            }
+            
+            savePlayoff('t5_playoffs', appState.t5.playoffs);
+            savePlayoff('t10_playoffsOro', appState.t10.playoffsOro);
+            savePlayoff('t10_playoffsPlata', appState.t10.playoffsPlata);
+
+            localStorage.setItem('padelTournamentState', JSON.stringify(appState));
+            renderAll();
+            
+            showDialog({
+                title: 'Guardado',
+                message: 'Los cambios se han guardado localmente con éxito.',
+                isPrompt: false,
+                icon: 'success'
+            });
+        }
+
+        function openExport() {
+            document.getElementById('data-modal').classList.remove('hidden');
+            document.getElementById('data-modal-title').innerText = "Exportar Datos";
+            document.getElementById('data-modal-desc').innerText = "Copia este código y guárdalo de forma segura.";
+            let txt = document.getElementById('data-modal-text');
+            txt.value = JSON.stringify(appState);
+            txt.readOnly = true;
+            document.getElementById('data-modal-action').innerText = "Copiar";
+            document.getElementById('data-modal-action').onclick = () => { 
+                txt.select(); 
+                document.execCommand("copy"); 
+                showDialog({ title: 'Copiado', message: 'Datos copiados al portapapeles.', isPrompt: false, icon: 'success' });
+            };
+        }
+
+        function openImport() {
+            document.getElementById('data-modal').classList.remove('hidden');
+            document.getElementById('data-modal-title').innerText = "Importar Datos";
+            document.getElementById('data-modal-desc').innerText = "Pega aquí el código JSON para restaurar.";
+            let txt = document.getElementById('data-modal-text');
+            txt.value = "";
+            txt.readOnly = false;
+            document.getElementById('data-modal-action').innerText = "Cargar";
+            document.getElementById('data-modal-action').onclick = () => {
+                try {
+                    let d = JSON.parse(txt.value);
+                    if(d.t5) { 
+                        appState = d; 
+                        localStorage.setItem('padelTournamentState', JSON.stringify(appState)); 
+                        renderAll(); 
+                        closeDataModal(); 
+                        showDialog({ title: 'Éxito', message: 'Datos cargados correctamente.', isPrompt: false, icon: 'success' });
+                    }
+                } catch(e) { 
+                    showDialog({ title: 'Error', message: 'Formato de datos incorrecto.', isPrompt: false }); 
+                }
+            };
+        }
+
+        function closeDataModal() { document.getElementById('data-modal').classList.add('hidden'); }
+
+        function exportViewToPDF(id) {
+            const element = document.getElementById(id);
+            const opt = {
+                margin: 5,
+                filename: `Torneo_${id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // ====== FUNCIÓN PARA EXPORTAR EL CALENDARIO EN DOS PÁGINAS =======
+        function exportCalendarioCompletoPDF() {
+            const element = document.getElementById('horarios-content');
+            
+            // Aplicar temporalmente la clase de compresión/estilos para PDF
+            element.classList.add('pdf-print-mode');
+
+            const opt = {
+                margin: [10, 10, 10, 10], // Márgenes
+                filename: 'Calendario_I_Torneo_Padel_Fresno.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    windowWidth: 800 // Fuerza un ancho mayor para que las dos columnas queden bien en PDF
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'css', before: '.page-break' }
+            };
+
+            // Ejecutar la exportación y remover la clase al finalizar
+            html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+                element.classList.remove('pdf-print-mode');
+            }).save();
+        }
+
+        // Renderizado inicial forzado para poblar variables en todas las pantallas
+        renderAll();
+    </script>
+</body>
+</html>
